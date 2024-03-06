@@ -58,7 +58,6 @@ def register():
         user = User(
             name=form.name.data,
             email=form.email.data,
-            # about=form.about.data
         )
         user.set_password(form.password.data)
         db_sess.add(user)
@@ -150,7 +149,7 @@ def news_delete(id):
 
 
 def main():
-    db_session.global_init("db/blogs.db")
+    db_session.global_init("db/database.db")
     app.run(port=8080, host="127.0.0.1", debug=True)
 
 

@@ -18,6 +18,7 @@ class User(SqlAlchemyBase, UserMixin):
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     created_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.datetime.now)
+    user_level = sqlalchemy.Column(sqlalchemy.String, default='student')
 
     news = orm.relationship("News", back_populates='user')
 
