@@ -148,6 +148,11 @@ def news_delete(id):
     return redirect('/')
 
 
+@app.route('/give_test')
+def give_test():
+    return render_template('give_test.html')
+
+
 def main():
     db_session.global_init("db/database.db")
     app.run(port=8080, host="127.0.0.1", debug=True)

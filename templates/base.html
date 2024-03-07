@@ -22,7 +22,7 @@
                href="/logout">Выход</a>
             <a class="navbar-text" style="margin-left: 10px; text-align: center;">{{ current_user.name }}</a>
             {% if current_user.user_level == 'admin' %}
-            <a class="navbar-text" style="margin-left: 10px; text-align: center;">Выдать тест</a>
+            <a class="navbar-text" style="margin-left: 10px; text-align: center;" href="/give_test">Выдать тест</a>
             {% endif %}
             <!--            <div class="p-2">Флекс элемент 3</div>-->
         </div>
