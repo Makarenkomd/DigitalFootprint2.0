@@ -1,3 +1,5 @@
+import datetime
+
 import sqlalchemy
 # from werkzeug.security import generate_password_hash, check_password_hash
 from .db_session import SqlAlchemyBase
@@ -5,17 +7,20 @@ from sqlalchemy import orm
 from flask_login import UserMixin
 
 
-class Question(SqlAlchemyBase, UserMixin):
+class MiniTest(SqlAlchemyBase, UserMixin):
     __tablename__ = 'questions'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
-    text = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.now)
 
-    topic_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('topics.id'), nullable=True)
-    topic = orm.relationship("Topic",
-                             secondary="question_to_topic",
-                             backref="question")
+
+    # text = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    #
+    # topic_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('topics.id'), nullable=True)
+    # topic = orm.relationship("Topic",
+    #                          secondary="question_to_topic",
+    #                          backref="question")
 
     # about = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     # email = sqlalchemy.Column(sqlalchemy.String,
