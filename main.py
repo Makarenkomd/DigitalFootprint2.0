@@ -22,11 +22,11 @@ def load_user(user_id):
 def index():
     db_sess = db_session.create_session()
     if current_user.is_authenticated:
-        news = db_sess.query(News).filter(
-            (News.user == current_user) | (News.is_private != True))
-        return render_template("index.html", news=news)
+        # news = db_sess.query(News).filter(
+        #     (News.user == current_user) | (News.is_private != True))
+        return render_template("index.html")
     else:
-        news = db_sess.query(News).filter(News.is_private != True)
+        # news = db_sess.query(News).filter(News.is_private != True)
         return redirect('/authentication')
 
 

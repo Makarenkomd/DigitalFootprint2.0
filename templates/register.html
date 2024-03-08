@@ -11,8 +11,12 @@
     </p>
     <p>
         {{ form.date_of_birth.label }}<br>
-        {{ form.date_of_birth }}<br>
-    </p>
+        {{ form.date_of_birth(class="form-control", type="date") }}<br>
+        {% for error in form.date_of_birth.errors %}
+    <div class="alert alert-danger" role="alert">
+        {{ error }}
+    </div>
+    {% endfor %}
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
     {{message}}
 </form>
