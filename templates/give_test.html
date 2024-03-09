@@ -1,6 +1,48 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container">
+    <h1 class="text-center display-4 mb-4">Выдача тестов</h1>
+    <form action="/give_test" method="post">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
 
+                <fieldset class="border p-3 rounded">
+                    <legend class="form-legend">Выберите студентов:</legend>
+                    <div class="form-group">
+                        {% for student in students %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="student-{{ student.id }}"
+                                   name="students" value="{{ student.id }}">
+                            <label class="form-check-label" for="student-{{ student.id }}">{{ student.name }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <br>
+                <button type="submit" class="btn btn-primary float-end">Выдать тест</button>
 
+            </div>
+
+            <div class="col-md-6">
+
+                <fieldset class="border p-3 rounded">
+                    <legend class="form-legend">Выберите тест:</legend>
+                    <div class="form-group">
+                        <ul class="list-unstyled">
+                            {% for topic in topics %}
+                            <li>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" id="topic-{{ topic.id }}" name="topics"
+                                           value="{{ topic.id }}">
+                                    <label class="form-check-label" for="topic-{{ topic.id }}">{{ topic.name }}</label>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </fieldset>
+
+    </form>
+</div>
 {% endblock %}

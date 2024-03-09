@@ -1,6 +1,7 @@
-from flask import Flask, render_template, redirect, abort, request
+from flask import Flask, render_template, redirect, abort, request, url_for, flash
 from data import db_session
 from data.users import User
+from data.topics import Topic
 from forms.user import RegisterForm, LoginForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
@@ -58,6 +59,11 @@ def register():
         db_sess.commit()
         return redirect('/')
     return render_template('register.html', title='Регистрация', form=form)
+
+
+@app.route("/выдать_тест", methods=["POST"])
+def issue_test():
+    return redirect(url_for("index"))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -146,9 +152,17 @@ def login():
 #     return redirect('/')
 
 
-@app.route('/give_test')
+@app.route('/give_test', methods=['GET', 'POST'])
 def give_test():
-    return render_template('give_test.html')
+    db_sess = db_session.create_session()
+    students = db_sess.query(User).filter(User.user_level != 'admin')
+    topics = db_sess.query(Topic)
+    if request.method == 'POST':
+        students_id = request.form.getlist('students')
+        topic_id = request.form.get('topics')
+        print(students_id)
+        print(topic_id)
+    return render_template('give_test.html', students=students, topics=topics)
 
 
 def main():
