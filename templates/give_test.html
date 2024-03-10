@@ -20,12 +20,11 @@
                     </div>
                 </fieldset>
                 <br>
-                <button type="submit" class="btn btn-primary float-end">Выдать тест</button>
-
+                <button type="submit" class="btn btn-primary float-end" onclick="return validateSelection()">Выдать
+                    тест
+                </button>
             </div>
-
             <div class="col-md-6">
-
                 <fieldset class="border p-3 rounded">
                     <legend class="form-legend">Выберите тест:</legend>
                     <div class="form-group">
@@ -43,6 +42,44 @@
                     </div>
                 </fieldset>
 
-    </form>
+                <br>
+            </div>
+
+            <div id="error-message" class="alert alert-danger" role="alert" style="display: none;">
+                Пожалуйста, выберите хотя бы одного студента и один тест.
+            </div>
+
+
+        </div>
 </div>
+</form>
+</div>
+
+<script>
+    function validateSelection() {
+      // Check if any student checkbox is selected
+      var studentSelected = false;
+      var studentCheckboxes = document.querySelectorAll('input[type="checkbox"][name="students"]');
+      for (var i = 0; i < studentCheckboxes.length; i++) {
+        if (studentCheckboxes[i].checked) {
+          studentSelected = true;
+          break;
+        }
+      }
+
+      // Check if any topic radio button is selected
+      var topicSelected = document.querySelector('input[type="radio"][name="topics"]:checked');
+
+      // Display error message if necessary
+      var errorMessage = document.getElementById('error-message');
+      if (!studentSelected || !topicSelected) {
+        errorMessage.style.display = 'block';
+        return false; // Prevent form submission if selection is invalid
+      } else {
+        errorMessage.style.display = 'none';
+        return true; // Allow form submission if selection is valid
+      }
+    }
+</script>
+
 {% endblock %}
