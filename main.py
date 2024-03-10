@@ -1,8 +1,11 @@
+import random
 from flask import Flask, render_template, redirect, abort, request, url_for, flash
 from data import db_session
 from data.users import User
 from data.topics import Topic
+from data.blitz_tests import BlitzTest
 from forms.user import RegisterForm, LoginForm
+from data.questions import Question
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
@@ -157,11 +160,29 @@ def give_test():
     db_sess = db_session.create_session()
     students = db_sess.query(User).filter(User.user_level != 'admin')
     topics = db_sess.query(Topic)
+
     if request.method == 'POST':
+
         students_id = request.form.getlist('students')
         topic_id = request.form.get('topics')
-        print(students_id)
-        print(topic_id)
+
+        for j in range(len(students_id)):
+
+            blitz_test = BlitzTest()
+            count = db_sess.query(Question).filter(Question.topic_id == topic_id).count()
+            questions = [db_sess.query(Question).filter(Question.topic_id == topic_id)[i].id for i in range(0, count)]
+            questions_index = [i for i in range(0, count)]
+
+            blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+            blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+            blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+            blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+            blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+            blitz_test.student = students_id[j]
+
+            db_sess.add(blitz_test)
+            db_sess.commit()
+
     return render_template('give_test.html', students=students, topics=topics)
 
 

@@ -17,11 +17,11 @@ class BlitzTest(SqlAlchemyBase, UserMixin):
     question_4 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
     question_5 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
 
-    answer_1 = sqlalchemy.Column(sqlalchemy.String)
-    answer_2 = sqlalchemy.Column(sqlalchemy.String)
-    answer_3 = sqlalchemy.Column(sqlalchemy.String)
-    answer_4 = sqlalchemy.Column(sqlalchemy.String)
-    answer_5 = sqlalchemy.Column(sqlalchemy.String)
+    answer_1 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    answer_2 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    answer_3 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    answer_4 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    answer_5 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
     comment_1 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     comment_2 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
