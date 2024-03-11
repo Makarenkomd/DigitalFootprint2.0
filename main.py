@@ -25,7 +25,11 @@ def index():
     db_sess = db_session.create_session()
     if current_user.is_authenticated:
         tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
-        return render_template("index.html", tests=tests)
+        tests_admin = db_sess.query(BlitzTest)
+        if current_user.user_level == 'student':
+            return render_template("index.html", tests=tests)
+        else:
+            return render_template("index_admin.html", tests_admin=tests_admin)
     else:
         return redirect('/authentication')
 

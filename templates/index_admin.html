@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container text-center">
+    <h1>Тесты</h1>
+</div>
+{% for test_admin in tests_admin|reverse %}
+<div class="col-md-6 border rounded mx-auto" style="margin-bottom: 20px; padding: 10px;">
+    <p class="text-left" style="margin-bottom: 10px;">{{test_admin.date}}</p>
+    <div>
+    </div>
+    <div>
+
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
