@@ -24,12 +24,43 @@ def load_user(user_id):
 def index():
     db_sess = db_session.create_session()
     if current_user.is_authenticated:
-        # news = db_sess.query(News).filter(
-        #     (News.user == current_user) | (News.is_private != True))
-        return render_template("index.html")
+        tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
+        return render_template("index.html", tests=tests)
     else:
-        # news = db_sess.query(News).filter(News.is_private != True)
         return redirect('/authentication')
+
+
+@app.route("/start_test/<int:test_id>")
+@login_required
+def start_test(test_id):
+    db_sess = db_session.create_session()
+    test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+    questions = [db_sess.query(Question).filter(Question.id == test.question_1).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_2).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_3).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_4).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_5).first()]
+
+    return render_template('test.html', test=test, questions=questions)
+
+
+@app.route('/submit_test/<int:test_id>', methods=['POST'])
+@login_required
+def submit_test(test_id):
+    db_sess = db_session.create_session()
+    test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+
+    answers = request.form.getlist('answer')
+
+    test.answer_1 = answers[0]
+    test.answer_2 = answers[1]
+    test.answer_3 = answers[2]
+    test.answer_4 = answers[3]
+    test.answer_5 = answers[4]
+
+    db_sess.commit()
+
+    return redirect('/')
 
 
 @app.route('/logout/')
@@ -57,16 +88,10 @@ def register():
             name=form.name.data,
             date_of_birth=form.date_of_birth.data,
         )
-        # user.set_password(form.password.data)
         db_sess.add(user)
         db_sess.commit()
         return redirect('/')
     return render_template('register.html', title='Регистрация', form=form)
-
-
-@app.route("/выдать_тест", methods=["POST"])
-def issue_test():
-    return redirect(url_for("index"))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -74,9 +99,6 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        # print(form.name.data)
-        # print(User.name.)
-        # print(db_sess.query(User).filter(User.name == form.name.data).first())
         user = db_sess.query(User).filter(User.name == form.name.data).first()
         if user is not None:
             if user.date_of_birth == form.date_of_birth.data:
@@ -88,100 +110,37 @@ def login():
     return render_template('login.html', title='Авторизация', form=form)
 
 
-# @app.route('/news', methods=['GET', 'POST'])
-# @login_required
-# def add_news():
-#     form = NewsForm()
-#     if form.validate_on_submit():
-#         db_sess = db_session.create_session()
-#         news = News()
-#         news.title = form.title.data
-#         news.content = form.content.data
-#         news.is_private = form.is_private.data
-#         current_user.news.append(news)
-#         db_sess.merge(current_user)
-#         db_sess.commit()
-#         return redirect('/')
-#     return render_template('news.html', title='Добавление новости',
-#                            form=form)
-
-
-# @app.route('/news/<int:id>', methods=['GET', 'POST'])
-# @login_required
-# def edit_news(id):
-#     form = NewsForm()
-#     if request.method == "GET":
-#         db_sess = db_session.create_session()
-#         news = db_sess.query(News).filter(News.id == id,
-#                                           News.user == current_user
-#                                           ).first()
-#         if news:
-#             form.title.data = news.title
-#             form.content.data = news.content
-#             form.is_private.data = news.is_private
-#         else:
-#             abort(404)
-#     if form.validate_on_submit():
-#         db_sess = db_session.create_session()
-#         news = db_sess.query(News).filter(News.id == id,
-#                                           News.user == current_user
-#                                           ).first()
-#         if news:
-#             news.title = form.title.data
-#             news.content = form.content.data
-#             news.is_private = form.is_private.data
-#             db_sess.commit()
-#             return redirect('/')
-#         else:
-#             abort(404)
-#     return render_template('news.html',
-#                            title='Редактирование новости',
-#                            form=form
-#                            )
-
-
-# @app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
-# @login_required
-# def news_delete(id):
-#     db_sess = db_session.create_session()
-#     news = db_sess.query(News).filter(News.id == id,
-#                                       News.user == current_user
-#                                       ).first()
-#     if news:
-#         db_sess.delete(news)
-#         db_sess.commit()
-#     else:
-#         abort(404)
-#     return redirect('/')
-
-
 @app.route('/give_test', methods=['GET', 'POST'])
+@login_required
 def give_test():
-    db_sess = db_session.create_session()
-    students = db_sess.query(User).filter(User.user_level != 'admin')
-    topics = db_sess.query(Topic)
+    if current_user.user_level == 'admin':
+        db_sess = db_session.create_session()
+        students = db_sess.query(User).filter(User.user_level != 'admin')
+        topics = db_sess.query(Topic)
 
-    if request.method == 'POST':
+        if request.method == 'POST':
 
-        students_id = request.form.getlist('students')
-        topic_id = request.form.get('topics')
+            students_id = request.form.getlist('students')
+            topic_id = request.form.get('topics')
 
-        for j in range(len(students_id)):
+            for j in range(len(students_id)):
+                blitz_test = BlitzTest()
+                count = db_sess.query(Question).filter(Question.topic_id == topic_id).count()
+                questions = [db_sess.query(Question).filter(Question.topic_id == topic_id)[i].id for i in
+                             range(0, count)]
+                questions_index = [i for i in range(0, count)]
 
-            blitz_test = BlitzTest()
-            count = db_sess.query(Question).filter(Question.topic_id == topic_id).count()
-            questions = [db_sess.query(Question).filter(Question.topic_id == topic_id)[i].id for i in range(0, count)]
-            questions_index = [i for i in range(0, count)]
+                blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                blitz_test.student = students_id[j]
 
-            blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-            blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-            blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-            blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-            blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-            blitz_test.student = students_id[j]
-
-            db_sess.add(blitz_test)
-            db_sess.commit()
+                db_sess.add(blitz_test)
+                db_sess.commit()
+    else:
+        abort(404)
 
     return render_template('give_test.html', students=students, topics=topics)
 

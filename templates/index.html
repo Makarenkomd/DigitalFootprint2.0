@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if current_user.user_level != 'admin' %}
+<div class="container text-center">
+    <h1>Ваши тесты</h1>
+</div>
+{% for test in tests|reverse %}
+<div class="col-md-6 border rounded mx-auto" style="margin-bottom: 20px; padding: 10px;">
+    <p class="text-left" style="margin-bottom: 10px;">{{test.date}}</p>
+    <div>
+        <a href="{{ url_for('start_test', test_id=test.id) }}">
+            <button type="button" style="margin-bottom: 10px;" class="btn btn-primary">Начать тест</button>
+        </a>
+    </div>
+    <div>
+
+    </div>
+</div>
+{% endfor %}
+{% endif %}
 
 {% endblock %}
