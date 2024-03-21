@@ -3,3 +3,4 @@ werkzeug
 wtforms
 flask
 flask-login
+Flask-WTF
