@@ -1,5 +1,7 @@
+import os
 import random
-from flask import Flask, render_template, redirect, abort, request, url_for, flash
+import datetime
+from flask import Flask, render_template, redirect, abort, request, url_for, flash, current_app
 from data import db_session
 from data.users import User
 from data.topics import Topic
@@ -7,9 +9,16 @@ from data.blitz_tests import BlitzTest
 from forms.user import RegisterForm, LoginForm
 from data.questions import Question
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from forms.question import AddQuestionForm
+from forms.topic import AddTopicForm
+from utils.count_res_topic import count_res_topics_sum, count_res_topics
+from utils.count_correct_and_wrong_ans import count_cor_wng_ans
+from forms.avatar import AvatarForm
+from api import api
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+app.config['AVATAR_UPLOAD_PATH'] = os.path.join(os.getcwd(), 'static', 'images', 'avatar')
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -24,12 +33,61 @@ def load_user(user_id):
 def index():
     db_sess = db_session.create_session()
     if current_user.is_authenticated:
-        tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
+        available_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
         tests_admin = db_sess.query(BlitzTest)
+        date_time = datetime.datetime.now()
+        students = [item for item in db_sess.query(User)]
+
         if current_user.user_level == 'student':
-            return render_template("index.html", tests=tests)
+            results = []
+            for test in available_tests:
+                test_results = 0
+                if test.result_answer_1 == 1:
+                    test_results += 1
+                if test.result_answer_2 == 1:
+                    test_results += 1
+                if test.result_answer_3 == 1:
+                    test_results += 1
+                if test.result_answer_4 == 1:
+                    test_results += 1
+                if test.result_answer_5 == 1:
+                    test_results += 1
+
+                if None in [test.result_answer_1, test.result_answer_2, test.result_answer_3, test.result_answer_4,
+                            test.result_answer_5]:
+                    results.append('Не проверено')
+                else:
+                    results.append(f'{test_results}/5')
+            tests_and_results = zip(available_tests, results)
+
+            return render_template("index.html", tests_and_results=tests_and_results, date_time=date_time,
+                                   title='Главная')
+
         else:
-            return render_template("index_admin.html", tests_admin=tests_admin)
+            results = []
+            for test in tests_admin:
+                test_results = 0
+                if test.result_answer_1 == 1:
+                    test_results += 1
+                if test.result_answer_2 == 1:
+                    test_results += 1
+                if test.result_answer_3 == 1:
+                    test_results += 1
+                if test.result_answer_4 == 1:
+                    test_results += 1
+                if test.result_answer_5 == 1:
+                    test_results += 1
+
+                if None in [test.result_answer_1, test.result_answer_2, test.result_answer_3, test.result_answer_4,
+                            test.result_answer_5]:
+                    results.append('Не проверено')
+                else:
+                    results.append(f'{test_results}/5')
+            tests_and_results = zip(tests_admin, results)
+
+            return render_template("index_admin.html", date_time=date_time, students=students,
+                                   tests_and_results=tests_and_results, title='Главная')
+
     else:
         return redirect('/authentication')
 
@@ -45,7 +103,109 @@ def start_test(test_id):
                  db_sess.query(Question).filter(Question.id == test.question_4).first(),
                  db_sess.query(Question).filter(Question.id == test.question_5).first()]
 
-    return render_template('test.html', test=test, questions=questions)
+    answers = [db_sess.query(BlitzTest.answer_1).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_2).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_3).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_4).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_5).filter(BlitzTest.id == test_id).first()]
+
+    que_ans = zip(questions, answers)
+
+    end_date = test.date + datetime.timedelta(minutes=5)
+    end_date = datetime.datetime.strftime(end_date, "%B %d, %Y %H:%M:%S")
+
+    return render_template('test.html', test=test, que_ans=que_ans, end_date=end_date, title="Тест")
+
+
+@app.route("/test_result/<int:test_id>")
+@login_required
+def test_result(test_id):
+    if current_user.user_level == 'admin':
+        db_sess = db_session.create_session()
+        test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+        questions = [db_sess.query(Question).filter(Question.id == test.question_1).first(),
+                     db_sess.query(Question).filter(Question.id == test.question_2).first(),
+                     db_sess.query(Question).filter(Question.id == test.question_3).first(),
+                     db_sess.query(Question).filter(Question.id == test.question_4).first(),
+                     db_sess.query(Question).filter(Question.id == test.question_5).first()]
+
+        answers = [db_sess.query(BlitzTest.answer_1).filter(BlitzTest.id == test_id).first(),
+                   db_sess.query(BlitzTest.answer_2).filter(BlitzTest.id == test_id).first(),
+                   db_sess.query(BlitzTest.answer_3).filter(BlitzTest.id == test_id).first(),
+                   db_sess.query(BlitzTest.answer_4).filter(BlitzTest.id == test_id).first(),
+                   db_sess.query(BlitzTest.answer_5).filter(BlitzTest.id == test_id).first()]
+
+        comments = [db_sess.query(BlitzTest.comment_1).filter(BlitzTest.id == test_id)[0],
+                    db_sess.query(BlitzTest.comment_2).filter(BlitzTest.id == test_id)[0],
+                    db_sess.query(BlitzTest.comment_3).filter(BlitzTest.id == test_id)[0],
+                    db_sess.query(BlitzTest.comment_4).filter(BlitzTest.id == test_id)[0],
+                    db_sess.query(BlitzTest.comment_5).filter(BlitzTest.id == test_id)[0]]
+
+        results = [db_sess.query(BlitzTest.result_answer_1).filter(BlitzTest.id == test_id)[0],
+                   db_sess.query(BlitzTest.result_answer_2).filter(BlitzTest.id == test_id)[0],
+                   db_sess.query(BlitzTest.result_answer_3).filter(BlitzTest.id == test_id)[0],
+                   db_sess.query(BlitzTest.result_answer_4).filter(BlitzTest.id == test_id)[0],
+                   db_sess.query(BlitzTest.result_answer_5).filter(BlitzTest.id == test_id)[0], ]
+
+        que_ans_comm_results = zip(questions, answers, comments, results)
+
+        return render_template('test_result.html', test=test, que_ans_comm_results=que_ans_comm_results, title="Тест")
+    else:
+        abort(403)
+
+
+@app.route("/test_result_view/<int:test_id>")
+@login_required
+def test_result_view(test_id):
+    db_sess = db_session.create_session()
+    test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+    questions = [db_sess.query(Question).filter(Question.id == test.question_1).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_2).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_3).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_4).first(),
+                 db_sess.query(Question).filter(Question.id == test.question_5).first()]
+
+    answers = [db_sess.query(BlitzTest.answer_1).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_2).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_3).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_4).filter(BlitzTest.id == test_id).first(),
+               db_sess.query(BlitzTest.answer_5).filter(BlitzTest.id == test_id).first()]
+
+    comments = [db_sess.query(BlitzTest.comment_1).filter(BlitzTest.id == test_id)[0],
+                db_sess.query(BlitzTest.comment_2).filter(BlitzTest.id == test_id)[0],
+                db_sess.query(BlitzTest.comment_3).filter(BlitzTest.id == test_id)[0],
+                db_sess.query(BlitzTest.comment_4).filter(BlitzTest.id == test_id)[0],
+                db_sess.query(BlitzTest.comment_5).filter(BlitzTest.id == test_id)[0]]
+
+    results = [db_sess.query(BlitzTest.result_answer_1).filter(BlitzTest.id == test_id)[0],
+               db_sess.query(BlitzTest.result_answer_2).filter(BlitzTest.id == test_id)[0],
+               db_sess.query(BlitzTest.result_answer_3).filter(BlitzTest.id == test_id)[0],
+               db_sess.query(BlitzTest.result_answer_4).filter(BlitzTest.id == test_id)[0],
+               db_sess.query(BlitzTest.result_answer_5).filter(BlitzTest.id == test_id)[0], ]
+
+    que_ans_comm_results = zip(questions, answers, comments, results)
+
+    test_result_n = 0
+
+    if test.result_answer_1 == 1:
+        test_result_n += 1
+    if test.result_answer_2 == 1:
+        test_result_n += 1
+    if test.result_answer_3 == 1:
+        test_result_n += 1
+    if test.result_answer_4 == 1:
+        test_result_n += 1
+    if test.result_answer_5 == 1:
+        test_result_n += 1
+
+    if None in [test.result_answer_1, test.result_answer_2, test.result_answer_3, test.result_answer_4,
+                test.result_answer_5]:
+        test_result_n = 'Не проверено'
+    else:
+        test_result_n = f'{test_result_n}/5'
+
+    return render_template('test_result_view.html', test=test, que_ans_comm_results=que_ans_comm_results,
+                           result=test_result_n, title="Тест")
 
 
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
@@ -67,6 +227,36 @@ def submit_test(test_id):
     return redirect('/')
 
 
+@app.route('/submit_test_result/<int:test_id>', methods=['POST'])
+@login_required
+def submit_test_result(test_id):
+    db_sess = db_session.create_session()
+    test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+
+    comments = request.form.getlist('comment')
+    result_answers = [request.form.get('correct1'),
+                      request.form.get('correct2'),
+                      request.form.get('correct3'),
+                      request.form.get('correct4'),
+                      request.form.get('correct5')]
+
+    test.comment_1 = comments[0]
+    test.comment_2 = comments[1]
+    test.comment_3 = comments[2]
+    test.comment_4 = comments[3]
+    test.comment_5 = comments[4]
+
+    test.result_answer_1 = 1 if result_answers[0] == 'true' else 0
+    test.result_answer_2 = 1 if result_answers[1] == 'true' else 0
+    test.result_answer_3 = 1 if result_answers[2] == 'true' else 0
+    test.result_answer_4 = 1 if result_answers[3] == 'true' else 0
+    test.result_answer_5 = 1 if result_answers[4] == 'true' else 0
+
+    db_sess.commit()
+
+    return redirect('/')
+
+
 @app.route('/logout/')
 @login_required
 def logout():
@@ -76,7 +266,7 @@ def logout():
 
 @app.route('/authentication', methods=['GET', 'POST'])
 def authentication():
-    return render_template('authentication.html')
+    return render_template('authentication.html', title="Аутентификация")
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -125,32 +315,237 @@ def give_test():
         if request.method == 'POST':
 
             students_id = request.form.getlist('students')
-            topic_id = request.form.get('topics')
+            topics_id = request.form.getlist('topics')
+            topics_id = list(map(int, topics_id))
 
             for j in range(len(students_id)):
                 blitz_test = BlitzTest()
-                count = db_sess.query(Question).filter(Question.topic_id == topic_id).count()
-                questions = [db_sess.query(Question).filter(Question.topic_id == topic_id)[i].id for i in
-                             range(0, count)]
-                questions_index = [i for i in range(0, count)]
+                count = db_sess.query(Question).filter(Question.topic_id.in_(topics_id)).count()
+                if count >= 5:
+                    questions = [db_sess.query(Question).filter(Question.topic_id.in_(topics_id))[i].id for i in
+                                 range(0, count)]
 
-                blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-                blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-                blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-                blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-                blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
-                blitz_test.student = students_id[j]
+                    questions_index = [i for i in range(0, count)]
 
-                db_sess.add(blitz_test)
-                db_sess.commit()
+                    blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.student = students_id[j]
+
+                    db_sess.add(blitz_test)
+                    db_sess.commit()
+
+                    db_sess.close()
+                else:
+                    return render_template('give_test.html', students=students, topics=topics, title="Выдача тестов",
+                                           message="Вопросов на выбранную тему меньше 5")
     else:
-        abort(404)
+        abort(403)
 
-    return render_template('give_test.html', students=students, topics=topics)
+    return render_template('give_test.html', students=students, topics=topics, title="Выдача тестов")
+
+
+@app.route('/personal_cabinet/<int:user_id>', methods=['POST', 'GET'])
+@login_required
+def personal_cabinet(user_id):
+    if (current_user.id != user_id and current_user.user_level == 'admin') or (user_id == current_user.id):
+
+        db_sess = db_session.create_session()
+
+        student_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == user_id).all()
+        usr = db_sess.query(User).filter(User.id == user_id).first()
+        form = AvatarForm()
+
+        topic_res = count_res_topics_sum(db_sess, student_tests)
+        correct_ans, wrong_ans = count_cor_wng_ans(student_tests)
+        print(topic_res)
+        if request.method == 'POST' and form.validate_on_submit():
+            avatar = form.avatar.data
+            if avatar:
+                filename = avatar.filename
+                avatar.save(os.path.join(app.config['AVATAR_UPLOAD_PATH'], filename))
+
+                usr.avatar = filename
+                db_sess.commit()
+
+            db_sess.commit()
+
+        return render_template('personal_cabinet.html', correct_ans=correct_ans, wrong_ans=wrong_ans, usr=usr,
+                               topic_res=topic_res, title="Личный кабинет", form=form)
+    else:
+        abort(403)
+
+
+@app.route('/topics')
+@login_required
+def topics():
+    if current_user.user_level == 'admin':
+
+        db_sess = db_session.create_session()
+        topic_list = db_sess.query(Topic).all()
+
+        return render_template('topics.html', topics=topic_list, title="Темы")
+    else:
+        abort(403)
+
+
+@app.route('/questions/<int:topic_id>')
+@login_required
+def questions(topic_id):
+    if current_user.user_level == 'admin':
+
+        db_sess = db_session.create_session()
+        question_list = db_sess.query(Question).filter(Question.topic_id == topic_id).all()
+
+        return render_template('questions.html', title="Вопросы по теме", questions=question_list, topic_id=topic_id)
+    else:
+        abort(403)
+
+
+@app.route('/add_question/<int:topic_id>', methods=['POST', "GET"])
+@login_required
+def add_question(topic_id):
+    if current_user.user_level == 'admin':
+        form = AddQuestionForm()
+
+        if request.method == 'POST':
+            db_sess = db_session.create_session()
+
+            question = Question(text=form.text.data,
+                                topic_id=topic_id)
+
+            db_sess.add(question)
+            db_sess.commit()
+            return redirect(f'/questions/{topic_id}')
+        return render_template('add_question.html', title="Добавление вопроса", form=form)
+    else:
+        abort(403)
+
+
+@app.route('/add_topic', methods=['POST', "GET"])
+@login_required
+def add_topic():
+    if current_user.user_level == 'admin':
+        form = AddTopicForm()
+
+        if request.method == 'POST':
+            db_sess = db_session.create_session()
+
+            topic = Topic(name=form.name.data)
+
+            db_sess.add(topic)
+            db_sess.commit()
+            return redirect('/topics')
+        return render_template('add_topic.html', title="Добавление темы", form=form)
+    else:
+        abort(403)
+
+
+@app.route('/edit_question/<int:topic_id>/<int:question_id>', methods=['POST', "GET"])
+@login_required
+def edit_question(topic_id, question_id):
+    if current_user.user_level == 'admin':
+        form = AddQuestionForm()
+
+        if request.method == 'POST':
+            db_sess = db_session.create_session()
+            question = db_sess.query(Question).filter(Question.id == question_id).first()
+            question.text = form.text.data
+
+            db_sess.add(question)
+            db_sess.commit()
+            return redirect(f'/questions/{topic_id}')
+        return render_template('edit_question.html', title="Редактирование вопроса", form=form)
+    else:
+        abort(403)
+
+
+@app.route('/delete_question/<int:topic_id>/<int:question_id>')
+@login_required
+def delete_question(topic_id, question_id):
+    if current_user.user_level == 'admin':
+        db_sess = db_session.create_session()
+        question = db_sess.query(Question).filter(Question.id == question_id).first()
+        db_sess.delete(question)
+        db_sess.commit()
+        return redirect(f'/questions/{topic_id}')
+    else:
+        abort(403)
+
+
+@app.route('/edit_topic/<int:topic_id>', methods=['POST', "GET"])
+@login_required
+def edit_topic(topic_id):
+    if current_user.user_level == 'admin':
+        form = AddTopicForm()
+
+        if request.method == 'POST':
+            db_sess = db_session.create_session()
+            topic = db_sess.query(Topic).filter(Topic.id == topic_id).first()
+            topic.name = form.name.data
+
+            db_sess.add(topic)
+            db_sess.commit()
+            return redirect('/topics')
+        return render_template('edit_topic.html', title="Редактирование темы", form=form)
+    else:
+        abort(403)
+
+
+@app.route('/students')
+@login_required
+def students():
+    if current_user.user_level == 'admin':
+        db_sess = db_session.create_session()
+        students = db_sess.query(User).filter(User.user_level == "student").all()
+
+        return render_template('students.html', title='Студенты', students=students)
+    else:
+        abort(403)
+
+
+@app.route('/student_results/<int:student_id>')
+@login_required
+def student_results(student_id):
+    if current_user.user_level == 'admin':
+
+        db_sess = db_session.create_session()
+        student_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == student_id).all()
+        name = db_sess.query(User.name).filter(User.id == student_id).first()[0]
+
+        topics_res = count_res_topics(db_sess, student_tests)
+
+        return render_template('student_results.html', title='Результаты студента', topics_res=topics_res, name=name)
+    else:
+        abort(403)
+
+
+@app.route('/top_students')
+@login_required
+def top_students():
+    if current_user.user_level == 'admin':
+
+        db_sess = db_session.create_session()
+        students = db_sess.query(User).filter(User.user_level == "student").all()
+
+        students_res = [
+            [student.name,
+             count_cor_wng_ans(db_sess.query(BlitzTest).filter(BlitzTest.student == student.id).all())[0]]
+            for student in students]
+
+        students_top = sorted(students_res, key=lambda x: x[1], reverse=True)
+
+        print(students_top)
+        return render_template('top_students.html', title='Топ студентов', students_top=students_top)
+    else:
+        abort(403)
 
 
 def main():
     db_session.global_init("db/database.db")
+    app.register_blueprint(api.blueprint)
     app.run(port=8080, host="127.0.0.1", debug=True)
 
 

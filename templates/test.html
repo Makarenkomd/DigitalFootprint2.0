@@ -1,16 +1,60 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div id="timer" class="text-center" style="font-size: 18px; margin-top: 20px;"></div>
+
 <div class="container text-center">
     <h1>Тест</h1>
     <form action="{{ url_for('submit_test', test_id=test.id) }}" method="post">
-    {% for question in questions %}
-        <div class="col-md-6 mx-auto border rounded" style="margin-bottom: 20px;">
+    {% for question, answer in que_ans %}
+        <div class="col-md-6 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
+            {% if question == None %}
+            <p class="text-left" style="margin: 10px 0;">Вопрос удален</p>
+            {% else %}
             <p class="text-left" style="margin: 10px 0;">{{ question.text }}</p>
-            <input type="text" name="answer" class="form-control" style="margin: 10px 0;">
+            {% endif %}
+            {% if current_user.user_level != 'admin' %}
+                {% if answer[0] == None %}
+                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ"></textarea>
+                {% else %}
+                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ">{{ answer[0] }}</textarea>
+                {% endif %}
+            {% else %}
+                {% if answer[0] == None %}
+                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly></textarea>
+                {% else %}
+                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly>{{ answer[0] }}</textarea>
+                {% endif %}
+            {% endif %}
         </div>
     {% endfor %}
-        <input type="submit" class="btn btn-primary" value="Отправить">
+        {% if current_user.user_level != 'admin' %}
+            <input type="submit" class="btn btn-primary" value="Отправить">
+        {% endif %}
     </form>
 </div>
+
+<script>
+var endDate = new Date("{{ end_date }}").getTime();
+
+function updateTimer() {
+    var now = new Date().getTime();
+
+    var distance = endDate - now;
+
+    var hours = Math.floor(distance / (1000 * 60 * 60));
+    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    document.getElementById("timer").innerHTML = "Времени до окончания теста: " + minutes + "м " + seconds + "с ";
+
+    if (distance <= 0) {
+        clearInterval(timerInterval);
+        window.location.href = "{{ url_for('index') }}";
+    }
+}
+
+var timerInterval = setInterval(updateTimer, 1000);
+</script>
+
 {% endblock %}

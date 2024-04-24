@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .topics-container {
+            max-height: 300px; /* Максимальная высота контейнера с прокруткой */
+            overflow-y: auto; /* Включение вертикальной прокрутки */
+            position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+        }
+        .topics {
+            position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+        }
+        .topics table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .topics th, .topics td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .topics th {
+            background-color: #f2f2f2;
+        }
+        .search-bar {
+            position: sticky; /* Фиксированное позиционирование */
+            top: 0; /* Отступ от верха */
+            background-color: #f8f9fa; /* Цвет фона */
+            padding: 10px; /* Отступ внутри элемента */
+            z-index: 1; /* Z-индекс для управления порядком слоев */
+        }
+    </style>
+<h1>Добавление вопроса</h1>
+<form action="" method="post">
+    <p>
+        {{ form.text.label }}<br>
+        {{ form.text }}<br>
+    </p>
+    <p>
+        <label for="topicSearch">Выберете тему:</label><br>
+        {{ form.topic }}<br>
+        <input type="text" class="form-control mb-2" id="topicSearch" onkeyup="searchTopics()" placeholder="Поиск по темам">
+    </p>
+    <p>
+    <div class="topics-container">
+    <div class="topics">
+        <table id="topicTable">
+            <thead>
+                <tr>
+                    <th>Тема</th>
+                    <th>Выбрать</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for topic in topics %}
+                <tr>
+                    <td>{{ topic.name }}</td>
+                    <td><input type="radio" name="topic" value="{{ topic.id }}"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+</div>
+</div>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+
+<script>
+function searchTopics() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("topicSearch");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("topicTable");
+    tr = table.getElementsByTagName("tr");
+    for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .topics-container {
+            max-height: 300px; /* Максимальная высота контейнера с прокруткой */
+            overflow-y: auto; /* Включение вертикальной прокрутки */
+            position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+        }
+        .topics {
+            position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+        }
+        .topics table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .topics th, .topics td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .topics th {
+            background-color: #f2f2f2;
+        }
+        .search-bar {
+            position: sticky; /* Фиксированное позиционирование */
+            top: 0; /* Отступ от верха */
+            background-color: #f8f9fa; /* Цвет фона */
+            padding: 10px; /* Отступ внутри элемента */
+            z-index: 1; /* Z-индекс для управления порядком слоев */
+        }
+    </style>
+<h1>Добавление вопроса</h1>
+<form action="" method="post">
+    <p>
+        {{ form.text.label }}<br>
+        {{ form.text(class_="form-control mb-2") }}<br>
+    </p>
+
+
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+
+{% endblock %}

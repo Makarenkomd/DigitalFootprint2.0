@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container text-center">
+    <h1>Тест</h1>
+    <form action="{{ url_for('submit_test_result', test_id=test.id) }}" method="post">
+        {% for question, answer, comment, result in que_ans_comm_results %}
+        <div class="row">
+            <div class="col-md-12 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if question == None %}
+                        <p class="text-left" style="margin: 10px 0;">Вопрос удален</p>
+                        {% else %}
+                        <p class="text-left" style="margin: 10px 0;">{{ question.text }}</p>
+                        {% endif %}
+                        {% if answer[0] == None %}
+                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;"
+                                  placeholder="Ваш ответ" readonly></textarea>
+                        {% else %}
+                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;"
+                                  placeholder="Ваш ответ" readonly>{{ answer[0] }}</textarea>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if result[0] == 1 %}
+                        <div class="form-check">
+                            <p style="color: green">
+                                Верно
+                            </p>
+                        </div>
+                        {% elif result[0] == 0%}
+                        <p style="color: red">Неверно</p>
+                        {% else %}
+                        <p style="color: grey">Не проверено</p>
+                        {% endif %}
+                        {% if comment[0] == None %}
+                        <textarea name="comment" class="form-control" rows="5" style="margin: 10px 0;"
+                                  placeholder="Комментарий" readonly></textarea>
+                        {% else %}
+                        <textarea name="comment" class="form-control" rows="5" style="margin: 10px 0;"
+                                  placeholder="Комментарий" readonly>{{ comment[0] }}</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <h2>Результат: {{ result }}</h2>
+    </form>
+</div>
+{% endblock %}

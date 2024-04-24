@@ -4,14 +4,49 @@
 <div class="container text-center">
     <h1>Тесты</h1>
 </div>
-{% for test_admin in tests_admin|reverse %}
-<div class="col-md-6 border rounded mx-auto" style="margin-bottom: 20px; padding: 10px;">
-    <p class="text-left" style="margin-bottom: 10px;">{{test_admin.date}}</p>
+<div class="container">
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Поиск по названию теста">
+</div>
+{% for test, result in tests_and_results|reverse %}
+<div class="col-md-6 border rounded mx-auto custom-div" style="margin-bottom: 20px; padding: 10px;">
+    <p class="text-left" style="margin-bottom: 10px;">{{ test.date.strftime("%d.%m.%Y %H:%M") }} {{ students[test.student - 1].name }}</p>
     <div>
+        {% if (date_time - test.date).total_seconds() > 300 %}
+            <p class="text-left" style="margin-bottom: 10px;">Результат: {{ result }}</p>
+            <p style="color: red;">Время вышло</p>
+            <a href="{{ url_for('test_result', test_id=test.id) }}">
+                <button type="button" style="margin-bottom: 10px;" class="btn btn-secondary">Проверить тест</button>
+            </a>
+
+        {% else %}
+            <a href="{{ url_for('start_test', test_id=test.id) }}">
+                <button type="button" style="margin-bottom: 10px;" class="btn btn-primary">Посмотреть тест</button>
+            </a>
+        {% endif %}
     </div>
     <div>
 
     </div>
 </div>
 {% endfor %}
+
+<script>
+    document.getElementById('searchInput').addEventListener('input', function() {
+        var input, filter, tests, testDiv, i, txtValue;
+        input = document.getElementById('searchInput');
+        filter = input.value.toUpperCase();
+        tests = document.getElementsByClassName('custom-div');
+
+        for (i = 0; i < tests.length; i++) {
+            testDiv = tests[i].getElementsByTagName('p')[0]; // Изменено с h1 на p
+            txtValue = testDiv.textContent || testDiv.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tests[i].style.display = '';
+            } else {
+                tests[i].style.display = 'none';
+            }
+        }
+    });
+</script>
+
 {% endblock %}

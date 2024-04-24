@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Личный кабинет студента</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+    }
+    .container {
+        width: 80%;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        display: flex;
+    }
+    .profile {
+        flex: 1;
+    }
+    .profile img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: block;
+    }
+    .profile h2 {
+        text-align: center;
+        margin-top: 10px;
+        color: #555;
+    }
+    .info {
+        flex: 2;
+        padding-left: 20px;
+    }
+    .info p {
+        margin-bottom: 10px;
+        color: #666;
+    }
+    canvas {
+        width: 200px;
+        height: 200px;
+    }
+    .topics-container {
+        max-height: 300px; /* Максимальная высота контейнера с прокруткой */
+        overflow-y: auto; /* Включение вертикальной прокрутки */
+        position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+    }
+    .topics {
+        position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+    }
+    .topics table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .topics th, .topics td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    .topics th {
+        background-color: #f2f2f2;
+    }
+    .search-bar {
+        position: sticky; /* Фиксированное позиционирование */
+        top: 0; /* Отступ от верха */
+        background-color: #f8f9fa; /* Цвет фона */
+        padding: 10px; /* Отступ внутри элемента */
+        z-index: 1; /* Z-индекс для управления порядком слоев */
+    }
+</style>
+
+<!--    <div class="container">-->
+<div class="profile">
+    <h1>Личный кабинет студента</h1>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <p>{{ form.avatar.label }}</p>
+        <p>{{ form.avatar }}</p>
+        <p>{{ form.submit(class_='btn btn-primary') }}</p>
+    </form>
+    {% if usr.avatar %}
+    <img src="../static/images/avatar/{{ usr.avatar }}">
+    {% endif %}
+    <div class="info">
+        <p><strong>Имя:</strong> {{ usr.name }}</p>
+        <p><strong>Дата рождения:</strong> {{ usr.date_of_birth }}</p>
+        {% if current_user.user_level == 'student' %}
+        <div class="topics">
+            <h3>Лучшие результаты по темам:</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Тема</th>
+                    <th>Результат</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>{{ topic_res[0][0] }}</td>
+                    <td>{{ topic_res[0][1] }}</td>
+                </tr>
+                <tr>
+                    <td>{{ topic_res[1][0] }}</td>
+                    <td>{{ topic_res[1][1] }}</td>
+                </tr>
+                <tr>
+                    <td>{{ topic_res[2][0] }}</td>
+                    <td>{{ topic_res[2][1] }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="topics">
+            <h3>Худшие результаты по темам:</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Тема</th>
+                    <th>Результат</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>{{ topic_res[-1][0] }}</td>
+                    <td>{{ topic_res[-1][1] }}</td>
+                </tr>
+                <tr>
+                    <td>{{ topic_res[-2][0] }}</td>
+                    <td>{{ topic_res[-2][1] }}</td>
+                </tr>
+                <tr>
+                    <td>{{ topic_res[-3][0] }}</td>
+                    <td>{{ topic_res[-3][1] }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="topics-container">
+            <div class="search-bar form-group">
+                <h3>Результаты по темам:</h3>
+                <input type="text" class="form-control" id="searchInput" onkeyup="searchTopics()"
+                       placeholder="Поиск по темам">
+            </div>
+
+            <div class="topics">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Тема</th>
+                        <th>Результат</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for topic, result in topic_res %}
+                    <tr>
+                        <td>{{ topic }}</td>
+                        <td>{{ result }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<canvas id="myChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Верные ответы', 'Неверные ответы'],
+            datasets: [{
+                label: 'Прогресс обучения',
+                data: [{{ correct_ans }}, {{ wrong_ans }}],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 99, 132, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: false,
+            cutoutPercentage: 70,
+            legend: {
+                position: 'right',
+                labels: {
+                    fontColor: '#333'
+                }
+            }
+        }
+    });
+
+    function searchTopics() {
+var input = document.getElementById("searchInput");
+var filter = input.value.toUpperCase();
+var table = document.querySelector(".topics-container table"); // изменено на ".topics-container table"
+var tr = table.getElementsByTagName("tr");
+for (var i = 0; i < tr.length; i++) {
+    var td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+        var txtValue = td.textContent || td.innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+}
+
+</script>
+{% endblock %}
