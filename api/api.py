@@ -5,7 +5,7 @@ from data.users import User
 from data.topics import Topic
 from data.blitz_tests import BlitzTest
 from data.questions import Question
-from main import app
+from server import app
 
 blueprint = Blueprint(
     'api',
