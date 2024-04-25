@@ -1,6 +1,6 @@
 В ветке rs последняя версия.
 В ветке main версия для glitch.com
-### Glitch - digital-foot-print.glitch.me
+### Glitch - https://digital-foot-print.glitch.me
 ### Пояснительная записка - https://docs.google.com/document/d/1APNbWDSlsnmtbXsXakeQnLTcFK-isKzAnk7b0oof1qc/edit?usp=sharing
 ### Презентация - https://drive.google.com/file/d/1ORvRdbX3uLAAPrO-fJw1lAk2c0yFKecp/view?usp=sharing
 # ТЗ
