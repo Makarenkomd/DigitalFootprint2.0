@@ -1,20 +1,56 @@
-import datetime
 import sqlalchemy
-from sqlalchemy_serializer import SerializerMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from .db_session import SqlAlchemyBase
-from sqlalchemy import orm
 from flask_login import UserMixin
+from sqlalchemy_serializer import SerializerMixin
+
+from .db_session import SqlAlchemyBase
+
+
+class Group(SqlAlchemyBase, SerializerMixin):
+    __tablename__ = "groups"
+
+    id = sqlalchemy.Column(
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+    name = sqlalchemy.Column(
+        sqlalchemy.String,
+        nullable=False,
+    )
 
 
 class User(SqlAlchemyBase, UserMixin, SerializerMixin):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
-    id = sqlalchemy.Column(sqlalchemy.Integer,
-                           primary_key=True, autoincrement=True)
-    name = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    group = sqlalchemy.Column(sqlalchemy.String, nullable=True, default='default')
-    date_of_birth = sqlalchemy.Column(sqlalchemy.Date, nullable=True)
-    user_level = sqlalchemy.Column(sqlalchemy.String, default='student')
+    id = sqlalchemy.Column(
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+    name = sqlalchemy.Column(
+        sqlalchemy.String,
+        nullable=True,
+    )
 
-    avatar = sqlalchemy.Column(sqlalchemy.String, nullable=True, default='icon.jpg')
+    group_id = sqlalchemy.Column(
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey(
+            "groups.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+    date_of_birth = sqlalchemy.Column(
+        sqlalchemy.Date,
+        nullable=True,
+    )
+    user_level = sqlalchemy.Column(
+        sqlalchemy.String,
+        default="student",
+    )
+
+    avatar = sqlalchemy.Column(
+        sqlalchemy.String,
+        nullable=True,
+        default="icon.jpg",
+    )

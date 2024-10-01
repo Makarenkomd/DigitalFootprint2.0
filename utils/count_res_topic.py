@@ -1,5 +1,5 @@
-from data.topics import Topic
 from data.questions import Question
+from data.topics import Topic
 
 
 def count_res_topics_sum(db_sess, student_tests):

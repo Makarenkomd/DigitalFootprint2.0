@@ -1,22 +1,24 @@
 import datetime
+
 import sqlalchemy
-from .db_session import SqlAlchemyBase
 from flask_login import UserMixin
 from sqlalchemy_serializer import SerializerMixin
 
+from .db_session import SqlAlchemyBase
+
 
 class BlitzTest(SqlAlchemyBase, UserMixin, SerializerMixin):
-    __tablename__ = 'blitz_tests'
+    __tablename__ = "blitz_tests"
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.now)
 
-    question_1 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
-    question_2 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
-    question_3 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
-    question_4 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
-    question_5 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('questions.id'))
+    question_1 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("questions.id"))
+    question_2 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("questions.id"))
+    question_3 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("questions.id"))
+    question_4 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("questions.id"))
+    question_5 = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("questions.id"))
 
     answer_1 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     answer_2 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
@@ -36,4 +38,4 @@ class BlitzTest(SqlAlchemyBase, UserMixin, SerializerMixin):
     result_answer_4 = sqlalchemy.Column(sqlalchemy.Boolean, nullable=True)
     result_answer_5 = sqlalchemy.Column(sqlalchemy.Boolean, nullable=True)
 
-    student = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id'))
+    student = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))
