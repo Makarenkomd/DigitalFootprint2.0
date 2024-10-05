@@ -153,10 +153,9 @@ def start_test(test_id):
 
     que_ans = zip(questions, answers)
 
-    end_date = test.date + datetime.timedelta(minutes=5)
-    end_date = datetime.datetime.strftime(end_date, "%B %d, %Y %H:%M:%S")
+    distance = ((test.date + datetime.timedelta(minutes=5)) - datetime.datetime.now()).total_seconds() * 1000
 
-    return render_template("test.html", test=test, que_ans=que_ans, end_date=end_date, title="Тест")
+    return render_template("test.html", test=test, que_ans=que_ans, distance=distance, title="Тест")
 
 
 @app.route("/test_result/<int:test_id>")

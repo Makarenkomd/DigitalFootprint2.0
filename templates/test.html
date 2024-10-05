@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="timer" class="text-center" style="font-size: 18px; margin-top: 20px;"></div>
+<div id="timer" class="text-center" style="font-size: 18px; margin-top: 20px;">Осталось времени: <span id="timer-value"></span></div>
 
 <div class="container text-center">
     <h1>Тест</h1>
-    <form action="{{ url_for('submit_test', test_id=test.id) }}" method="post">
+    <form action="{{ url_for('submit_test', test_id=test.id) }}" method="post" id="form_test">
     {% for question, answer in que_ans %}
         <div class="col-md-6 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
             {% if question == None %}
@@ -35,26 +35,34 @@
 </div>
 
 <script>
-var endDate = new Date("{{ end_date }}").getTime();
+    // Получаем значение distance из Flask
+    let distance = {{ distance }};
 
-function updateTimer() {
-    var now = new Date().getTime();
-
-    var distance = endDate - now;
-
-    var hours = Math.floor(distance / (1000 * 60 * 60));
-    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-    document.getElementById("timer").innerHTML = "Времени до окончания теста: " + minutes + "м " + seconds + "с ";
-
-    if (distance <= 0) {
-        clearInterval(timerInterval);
-        window.location.href = "{{ url_for('index') }}";
+    // Функция для форматирования времени
+    function formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
-}
 
-var timerInterval = setInterval(updateTimer, 1000);
+    // Функция для обновления таймера
+    function updateTimer() {
+        console.log(1)
+        const timerElement = document.getElementById('timer-value');
+        timerElement.textContent = formatTime(distance);
+
+        if (distance <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('form_test').submit();
+            window.location.href = "{{ url_for('index') }}";
+        } else {
+            distance -= 1000; // Уменьшаем время на 1 секунду
+        }
+    }
+
+    // Запускаем таймер
+    const timerInterval = setInterval(updateTimer, 1000);
 </script>
 
 {% endblock %}
