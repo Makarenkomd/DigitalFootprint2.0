@@ -42,15 +42,9 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     )
     date_of_birth = sqlalchemy.Column(
         sqlalchemy.Date,
-        nullable=True,
+        nullable=False,
     )
     user_level = sqlalchemy.Column(
         sqlalchemy.String,
         default="student",
-    )
-
-    avatar = sqlalchemy.Column(
-        sqlalchemy.String,
-        nullable=True,
-        default="icon.jpg",
     )

@@ -29,7 +29,39 @@ class RegisterForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    name = StringField("Имя пользователя", validators=[DataRequired()])
-    date_of_birth = DateField("Дата рождения", validators=[DataRequired()])
-    remember_me = BooleanField("Запомнить меня")
-    submit = SubmitField("Войти")
+    name = StringField(
+        "Имя пользователя",
+        validators=[
+            DataRequired(),
+        ],
+    )
+    date_of_birth = DateField(
+        "Дата рождения",
+        validators=[
+            DataRequired(),
+        ],
+    )
+    remember_me = BooleanField(
+        "Запомнить меня",
+    )
+    submit = SubmitField(
+        "Войти",
+    )
+
+
+class ProfileForm(FlaskForm):
+    name = StringField(
+        "Имя пользователя",
+        validators=[
+            DataRequired(),
+        ],
+    )
+    date_of_birth = DateField(
+        "Дата рождения",
+        validators=[
+            DataRequired(),
+        ],
+    )
+    submit = SubmitField(
+        "Сохранить",
+    )

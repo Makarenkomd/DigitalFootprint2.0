@@ -20,7 +20,7 @@ def get_users():
     users = db_sess.query(User).all()
     return jsonify(
         {
-            "user": [user.to_dict(only=("name", "group", "date_of_birth", "user_level", "avatar", "id"))
+            "user": [user.to_dict(only=("name", "group", "date_of_birth", "user_level", "id"))
                      for user in users],
         },
     )
@@ -75,7 +75,7 @@ def get_one_user(user_id):
     return jsonify(
         {
             "user": user.to_dict(only=(
-                "name", "group", "date_of_birth", "user_level", "avatar", "id")),
+                "name", "group", "date_of_birth", "user_level", "id")),
         },
     )
 

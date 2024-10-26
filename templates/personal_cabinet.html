@@ -78,18 +78,18 @@
 <!--    <div class="container">-->
 <div class="profile">
     <h1>Личный кабинет студента</h1>
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
-        <p>{{ form.avatar.label }}</p>
-        <p>{{ form.avatar }}</p>
-        <p>{{ form.submit(class_='btn btn-primary') }}</p>
-    </form>
-    {% if usr.avatar %}
-    <img src="../static/images/avatar/{{ usr.avatar }}">
-    {% endif %}
     <div class="info">
-        <p><strong>Имя:</strong> {{ usr.name }}</p>
-        <p><strong>Дата рождения:</strong> {{ usr.date_of_birth }}</p>
+        <form method="POST">
+            {{ form_for_profile.hidden_tag() }}
+            
+            <p><strong>{{ form_for_profile.name.label }}</strong></p>
+            {{ form_for_profile.name(class_="form-control mb-2") }}
+            <p><font color="red" size="2">{{ message }}</font></p>
+            <p><strong>{{ form_for_profile.date_of_birth.label }}</strong></p>
+            {{ form_for_profile.date_of_birth(class_="form-control mb-2") }}
+
+            {{ form_for_profile.submit(class_='btn btn-primary') }}
+        </form>
         {% if current_user.user_level == 'student' %}
         <div class="topics">
             <h3>Лучшие результаты по темам:</h3>

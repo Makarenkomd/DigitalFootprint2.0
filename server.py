@@ -23,17 +23,15 @@ from data.blitz_tests import BlitzTest
 from data.questions import Question
 from data.topics import Topic
 from data.users import Group, User
-from forms.avatar import AvatarForm
 from forms.question import AddQuestionForm
 from forms.topic import AddTopicForm
 from forms.group import GroupForm
-from forms.user import LoginForm, RegisterForm
+from forms.user import LoginForm, RegisterForm, ProfileForm
 from utils.count_correct_and_wrong_ans import count_cor_wng_ans
 from utils.count_res_topic import count_res_topics, count_res_topics_sum
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "yandexlyceum_secret_key"
-app.config["AVATAR_UPLOAD_PATH"] = os.path.join(os.getcwd(), "static", "images", "avatar")
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -378,18 +376,20 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
+    if request.method == "POST":
+        print('used method post')
+        print(request.json)
+        if form.validate_on_submit():
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.name == form.name.data).first()
 
-    if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter(User.name == form.name.data).first()
+            if user is not None:
 
-        if user is not None:
+                if user.date_of_birth == form.date_of_birth.data:
+                    login_user(user, remember=form.remember_me.data)
+                    return redirect("/")
 
-            if user.date_of_birth == form.date_of_birth.data:
-                login_user(user, remember=form.remember_me.data)
-                return redirect("/")
-
-        return render_template("login.html", message="Неправильное имя или дата рождения", form=form)
+            return render_template("login.html", message="Неправильное имя или дата рождения", form=form)
 
     return render_template("login.html", title="Авторизация", form=form)
 
@@ -463,6 +463,39 @@ def give_test(group_id):
     )
 
 
+@app.route("/groups/<int:group_id>/edit", methods=["GET", "POST"])
+def edit_group(group_id):
+    if current_user.user_level == "admin":
+        form = GroupForm()
+        db_sess = db_session.create_session()
+        group = db_sess.query(Group).filter(Group.id == group_id).first()
+
+        if request.method == "POST":
+
+            if form.validate_on_submit():
+                group.name = form.name.data
+
+                db_sess.commit()
+                db_sess.close()
+                return redirect("/groups")
+
+            return render_template(
+                "edit_group.html",
+                message="Что-то не так",
+                form=form,
+            )
+
+        form.name.data = group.name
+
+        return render_template(
+            "edit_group.html",
+            title="Редактирование группы",
+            form=form,
+        )
+
+    abort(403)
+
+
 @app.route("/users/<int:user_id>/delete", methods=["GET"])
 def delete_user(user_id):
     if current_user.user_level == "admin":
@@ -474,9 +507,9 @@ def delete_user(user_id):
             )
             .first()
         )
-        
+
         group_id = user.group_id
-        
+
         db_sess.delete(user)
         db_sess.commit()
 
@@ -485,8 +518,8 @@ def delete_user(user_id):
     return abort(403)
 
 
-@app.route("/personal_cabinet/<int:user_id>", methods=["POST", "GET"])
 @login_required
+@app.route("/personal_cabinet/<int:user_id>", methods=["GET", "POST"])
 def personal_cabinet(user_id):
     if (current_user.id != user_id and current_user.user_level == "admin") or (user_id == current_user.id):
 
@@ -494,21 +527,38 @@ def personal_cabinet(user_id):
 
         student_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == user_id).all()
         usr = db_sess.query(User).filter(User.id == user_id).first()
-        form = AvatarForm()
+        form_for_profile = ProfileForm()
+
+        message = ""
 
         topic_res = count_res_topics_sum(db_sess, student_tests)
         correct_ans, wrong_ans = count_cor_wng_ans(student_tests)
         print(topic_res)
-        if request.method == "POST" and form.validate_on_submit():
-            avatar = form.avatar.data
-            if avatar:
-                filename = avatar.filename
-                avatar.save(os.path.join(app.config["AVATAR_UPLOAD_PATH"], filename))
+        count_of_users_with_this_name = len(
+            db_sess.query(
+                User,
+            )
+            .filter(
+                User.name == form_for_profile.name.data,
+            )
+            .all(),
+        )
+        if request.method == "POST":
+            print(count_of_users_with_this_name)
+            if form_for_profile.validate_on_submit() and (
+                count_of_users_with_this_name == 0 or usr.name == form_for_profile.name.data
+            ):
+                usr.name = form_for_profile.name.data
+                usr.date_of_birth = form_for_profile.date_of_birth.data
 
-                usr.avatar = filename
                 db_sess.commit()
 
-            db_sess.commit()
+            elif count_of_users_with_this_name != 0:
+                message = "Пользователь с таким именем уже существует"
+                form_for_profile.name.data = usr.name
+        else:
+            form_for_profile.name.data = usr.name
+            form_for_profile.date_of_birth.data = usr.date_of_birth
 
         return render_template(
             "personal_cabinet.html",
@@ -517,8 +567,10 @@ def personal_cabinet(user_id):
             usr=usr,
             topic_res=topic_res,
             title="Личный кабинет",
-            form=form,
+            form_for_profile=form_for_profile,
+            message=message,
         )
+
     abort(403)
 
 
@@ -603,9 +655,7 @@ def edit_question(topic_id, question_id):
             db_sess.commit()
             return redirect(f"/questions/{topic_id}")
 
-        form.text.data = (
-            db_sess.query(Question).filter(Question.id == question_id).first().text
-        )
+        form.text.data = db_sess.query(Question).filter(Question.id == question_id).first().text
         return render_template(
             "edit_question.html",
             title="Редактирование вопроса",
@@ -713,9 +763,9 @@ def delete_group_by_id(group_id):
             )
             .first()
         )
-        
+
         users_for_deleting = db_sess.query(User).filter(User.group_id == group_id).all()
-        
+
         for user in users_for_deleting:
             db_sess.delete(user)
 
