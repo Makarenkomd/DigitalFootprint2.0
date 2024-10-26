@@ -3,13 +3,13 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
 
 
-class AddQuestionForm(FlaskForm):
-    text = StringField(
+class GroupForm(FlaskForm):
+    name = StringField(
         "Название группы",
         validators=[
             DataRequired(),
             Length(
-                5,
+                4,
                 64,
             ),
         ],

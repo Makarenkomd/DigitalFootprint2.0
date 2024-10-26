@@ -26,6 +26,7 @@ from data.users import Group, User
 from forms.avatar import AvatarForm
 from forms.question import AddQuestionForm
 from forms.topic import AddTopicForm
+from forms.group import GroupForm
 from forms.user import LoginForm, RegisterForm
 from utils.count_correct_and_wrong_ans import count_cor_wng_ans
 from utils.count_res_topic import count_res_topics, count_res_topics_sum
@@ -40,6 +41,7 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     db_sess = db_session.create_session()
+
     return db_sess.query(User).get(user_id)
 
 
@@ -404,7 +406,7 @@ def select_group_for_test():
     abort(403)
 
 
-@app.route("/group/<int:group_id>/give_test", methods=["GET", "POST"])
+@app.route("/groups/<int:group_id>/give_test", methods=["GET", "POST"])
 @login_required
 def give_test(group_id):
     if current_user.user_level == "admin":
@@ -461,6 +463,28 @@ def give_test(group_id):
     )
 
 
+@app.route("/users/<int:user_id>/delete", methods=["GET"])
+def delete_user(user_id):
+    if current_user.user_level == "admin":
+        db_sess = db_session.create_session()
+        user = (
+            db_sess.query(User)
+            .filter(
+                User.id == user_id,
+            )
+            .first()
+        )
+        
+        group_id = user.group_id
+        
+        db_sess.delete(user)
+        db_sess.commit()
+
+        return redirect(f"/groups/{group_id}")
+
+    return abort(403)
+
+
 @app.route("/personal_cabinet/<int:user_id>", methods=["POST", "GET"])
 @login_required
 def personal_cabinet(user_id):
@@ -505,6 +529,8 @@ def topics():
 
         db_sess = db_session.create_session()
         topic_list = db_sess.query(Topic).all()
+
+        db_sess.close()
 
         return render_template("topics.html", topics=topic_list, title="Темы")
     abort(403)
@@ -567,10 +593,9 @@ def add_topic():
 @login_required
 def edit_question(topic_id, question_id):
     if current_user.user_level == "admin":
+        db_sess = db_session.create_session()
         form = AddQuestionForm()
-
         if request.method == "POST":
-            db_sess = db_session.create_session()
             question = db_sess.query(Question).filter(Question.id == question_id).first()
             question.text = form.text.data
 
@@ -578,6 +603,9 @@ def edit_question(topic_id, question_id):
             db_sess.commit()
             return redirect(f"/questions/{topic_id}")
 
+        form.text.data = (
+            db_sess.query(Question).filter(Question.id == question_id).first().text
+        )
         return render_template(
             "edit_question.html",
             title="Редактирование вопроса",
@@ -616,13 +644,14 @@ def edit_topic(topic_id):
     abort(403)
 
 
-@app.route("/group/<int:group_id>")
+@app.route("/groups/<int:group_id>")
 @login_required
 def students_by_group_id(group_id):
     if current_user.user_level == "admin":
         db_sess = db_session.create_session()
         group = db_sess.query(Group).filter(Group.id == group_id).first()
-        students_by_group = db_sess.query(User).filter(User.user_level == "student" and User.group_id == group_id).all()
+        students_by_group = db_sess.query(User).filter(User.user_level == "student", User.group_id == group_id).all()
+        print(students_by_group)
 
         return render_template(
             "students_by_group.html",
@@ -645,6 +674,57 @@ def groups_of_students():
             title="Группы",
             groups=groups,
         )
+    abort(403)
+
+
+@app.route("/groups/create", methods=["POST", "GET"])
+def create_group():
+    if current_user.user_level == "admin":
+        form = GroupForm()
+
+        if request.method == "POST":
+            db_sess = db_session.create_session()
+
+            group = Group(
+                name=form.name.data,
+            )
+            db_sess.add(group)
+            db_sess.commit()
+
+            return redirect("/groups")
+
+        return render_template(
+            "create_group.html",
+            title="Создание группы",
+            form=form,
+        )
+
+
+@app.route("/groups/<int:group_id>/delete", methods=["GET"])
+def delete_group_by_id(group_id):
+    if current_user.user_level == "admin":
+
+        db_sess = db_session.create_session()
+
+        group = (
+            db_sess.query(Group)
+            .filter(
+                Group.id == group_id,
+            )
+            .first()
+        )
+        
+        users_for_deleting = db_sess.query(User).filter(User.group_id == group_id).all()
+        
+        for user in users_for_deleting:
+            db_sess.delete(user)
+
+        db_sess.delete(group)
+
+        db_sess.commit()
+
+        return redirect("/groups")
+
     abort(403)
 
 
