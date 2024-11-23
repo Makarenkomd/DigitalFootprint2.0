@@ -377,8 +377,6 @@ def register():
 def login():
     form = LoginForm()
     if request.method == "POST":
-        print('used method post')
-        print(request.json)
         if form.validate_on_submit():
             db_sess = db_session.create_session()
             user = db_sess.query(User).filter(User.name == form.name.data).first()
