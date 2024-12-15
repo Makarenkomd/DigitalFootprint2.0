@@ -829,7 +829,7 @@ def top_students():
 def main():
     db_session.global_init("db/database.db")
     app.register_blueprint(api.blueprint)
-    app.run(port=8080, host="0.0.0.0", debug=True)
+    app.run(port=8080, host="0.0.0.0", debug=False)
 
 
 if __name__ == "__main__":

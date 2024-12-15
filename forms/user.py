@@ -65,3 +65,4 @@ class ProfileForm(FlaskForm):
     submit = SubmitField(
         "Сохранить",
     )
+    
