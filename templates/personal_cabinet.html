@@ -84,9 +84,21 @@
             
             <p><strong>{{ form_for_profile.name.label }}</strong></p>
             {{ form_for_profile.name(class_="form-control mb-2") }}
-            <p><font color="red" size="2">{{ message }}</font></p>
+            <p><f   ont color="red" size="2">{{ message }}</font></p>
             <p><strong>{{ form_for_profile.date_of_birth.label }}</strong></p>
             {{ form_for_profile.date_of_birth(class_="form-control mb-2") }}
+            <div>
+                <strong>{{ form_for_profile.group.label }}</strong><br>
+                <select id="groupSelect" name="group" class="form-control mb-2">
+                    {% for group_id, group_name in form_for_profile.group.choices %}
+                    {% if group_id == form_for_profile.group.data %}
+                        <option value="{{ group_id }}" selected>{{ group_name }}</option>
+                    {% else %}
+                        <option value="{{ group_id }}">{{ group_name }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
 
             {{ form_for_profile.submit(class_='btn btn-primary') }}
         </form>

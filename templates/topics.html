@@ -122,7 +122,7 @@
     {% for topic in topics %}
     <li class="testItem">{{ topic.name }}
         <div class="buttons-container"><a type="button" class="btn btn-primary" href="/questions/{{ topic.id }}">Посмотреть
-            вопросы</a><a
+            вопросы({{ topic.question_count }})</a><a
                 type="button" class="btn btn-primary"
                 href="/edit_topic/{{ topic.id }}">Редактировать
             тему</a></div>

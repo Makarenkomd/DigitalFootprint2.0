@@ -62,7 +62,13 @@ class ProfileForm(FlaskForm):
             DataRequired(),
         ],
     )
+    group = SelectField(
+        "Группа",
+        coerce=int,
+        validators=[
+            DataRequired(),
+        ],
+    )
     submit = SubmitField(
         "Сохранить",
     )
-    

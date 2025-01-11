@@ -116,12 +116,12 @@
 }
 </style>
 <body>
-<h1>Группы студентов<a type="button" class="btn btn-primary" style="float: right;" href="/top_students">Топ студентов</a></h1>
+<h1>Студенты</h1>
 <input type="text" id="searchInput" onkeyup="searchTests()" placeholder="Поиск студентов">
 <ul id="testList">
     {% for group in groups %}
     <li class="testItem">{{ group.name }}
-        <div class="buttons-container"><a type="button" class="btn btn-primary" href="/groups/{{ group.id }}/give_test">Выбрать</a></div>
+        <div class="buttons-container"><a type="button" class="btn btn-primary" href="/tests/{{ group.id }}">Выбрать</a></div>
     </li>
     {% endfor %}
 </ul>

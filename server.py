@@ -1,6 +1,7 @@
 import datetime
 import os
 import random
+from sqlalchemy import desc, func, select
 
 from flask import (
     Flask,
@@ -44,47 +45,15 @@ def load_user(user_id):
 
 
 @app.route("/")
-def index():
-    db_sess = db_session.create_session()
-    if current_user.is_authenticated:
+def select_group_for_view_tests():
+    if not current_user.is_authenticated:
+        return redirect("/authentication")
+    if current_user.user_level == "student":
+        db_sess = db_session.create_session()
         available_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
-        tests_admin = db_sess.query(BlitzTest)
         date_time = datetime.datetime.now()
-        students = [item for item in db_sess.query(User)]
-
-        if current_user.user_level == "student":
-            results = []
-            for test in available_tests:
-                test_results = 0
-                if test.result_answer_1 == 1:
-                    test_results += 1
-                if test.result_answer_2 == 1:
-                    test_results += 1
-                if test.result_answer_3 == 1:
-                    test_results += 1
-                if test.result_answer_4 == 1:
-                    test_results += 1
-                if test.result_answer_5 == 1:
-                    test_results += 1
-
-                if None in [
-                    test.result_answer_1,
-                    test.result_answer_2,
-                    test.result_answer_3,
-                    test.result_answer_4,
-                    test.result_answer_5,
-                ]:
-                    results.append("Не проверено")
-                else:
-                    results.append(f"{test_results}/5")
-            tests_and_results = zip(available_tests, results)
-
-            return render_template(
-                "index.html", tests_and_results=tests_and_results, date_time=date_time, title="Главная"
-            )
-
         results = []
-        for test in tests_admin:
+        for test in available_tests:
             test_results = 0
             if test.result_answer_1 == 1:
                 test_results += 1
@@ -107,17 +76,65 @@ def index():
                 results.append("Не проверено")
             else:
                 results.append(f"{test_results}/5")
-        tests_and_results = zip(tests_admin, results)
+        tests_and_results = zip(available_tests, results)
 
-        return render_template(
-            "index_admin.html",
-            date_time=date_time,
-            students=students,
-            tests_and_results=tests_and_results,
-            title="Главная",
-        )
+        return render_template("index.html", tests_and_results=tests_and_results, date_time=date_time, title="Главная")
 
-    return redirect("/authentication")
+    db_sess = db_session.create_session()
+    groups = db_sess.query(Group).all()
+    db_sess.close()
+
+    return render_template("select_group_for_view_tests.html", groups=groups)
+
+
+@app.route("/tests/<int:group_id>")
+def tests_by_group(group_id):
+    if not current_user.is_authenticated:
+        return redirect("/authentication")
+
+    if current_user.user_level == "student":
+        return abort(404)
+
+    db_sess = db_session.create_session()
+
+    query_for_admin = select(BlitzTest, User).join(User, BlitzTest.student == User.id).where(User.group_id == group_id)
+
+    tests_admin = db_sess.execute(query_for_admin).fetchall()
+    date_time = datetime.datetime.now()
+
+    results = []
+    for test in tests_admin:
+        test = test[0]
+        test_results = 0
+        if test.result_answer_1 == 1:
+            test_results += 1
+        if test.result_answer_2 == 1:
+            test_results += 1
+        if test.result_answer_3 == 1:
+            test_results += 1
+        if test.result_answer_4 == 1:
+            test_results += 1
+        if test.result_answer_5 == 1:
+            test_results += 1
+
+        if None in [
+            test.result_answer_1,
+            test.result_answer_2,
+            test.result_answer_3,
+            test.result_answer_4,
+            test.result_answer_5,
+        ]:
+            results.append("Не проверено")
+        else:
+            results.append(f"{test_results}/5")
+
+    tests_and_results = zip(tests_admin, results)
+    return render_template(
+        "index_admin.html",
+        date_time=date_time,
+        tests_and_results=tests_and_results,
+        title="Главная",
+    )
 
 
 @app.route("/start_test/<int:test_id>")
@@ -527,11 +544,15 @@ def personal_cabinet(user_id):
         usr = db_sess.query(User).filter(User.id == user_id).first()
         form_for_profile = ProfileForm()
 
+        groups = db_sess.query(Group).all()
+
+        form_for_profile.group.choices = [(group.id, group.name) for group in groups]
+
         message = ""
 
         topic_res = count_res_topics_sum(db_sess, student_tests)
         correct_ans, wrong_ans = count_cor_wng_ans(student_tests)
-        print(topic_res)
+
         count_of_users_with_this_name = len(
             db_sess.query(
                 User,
@@ -542,14 +563,17 @@ def personal_cabinet(user_id):
             .all(),
         )
         if request.method == "POST":
-            print(count_of_users_with_this_name)
             if form_for_profile.validate_on_submit() and (
                 count_of_users_with_this_name == 0 or usr.name == form_for_profile.name.data
             ):
                 usr.name = form_for_profile.name.data
                 usr.date_of_birth = form_for_profile.date_of_birth.data
+                print(form_for_profile.group.data)
+                print(type(form_for_profile.group.data))
+                usr.group_id = form_for_profile.group.data
 
                 db_sess.commit()
+                print(usr.group_id)
 
             elif count_of_users_with_this_name != 0:
                 message = "Пользователь с таким именем уже существует"
@@ -557,6 +581,7 @@ def personal_cabinet(user_id):
         else:
             form_for_profile.name.data = usr.name
             form_for_profile.date_of_birth.data = usr.date_of_birth
+            form_for_profile.group.data = usr.group_id
 
         return render_template(
             "personal_cabinet.html",
@@ -578,11 +603,35 @@ def topics():
     if current_user.user_level == "admin":
 
         db_sess = db_session.create_session()
-        topic_list = db_sess.query(Topic).all()
+
+        query = (
+            select(
+                Question.id,
+                Topic.name,
+                func.count(Question.id).label("question_count"),
+            )
+            .join(
+                Question,
+                Topic.id == Question.topic_id,
+                isouter=True,
+            )
+            .group_by(
+                Topic.id,
+            )
+            .order_by(
+                Topic.name,
+            )
+        )
+
+        topics_with_count_of_questions = db_sess.execute(query).all()
 
         db_sess.close()
 
-        return render_template("topics.html", topics=topic_list, title="Темы")
+        return render_template(
+            "topics.html",
+            topics=topics_with_count_of_questions,
+            title="Темы",
+        )
     abort(403)
 
 
@@ -592,7 +641,15 @@ def questions(topic_id):
     if current_user.user_level == "admin":
 
         db_sess = db_session.create_session()
-        question_list = db_sess.query(Question).filter(Question.topic_id == topic_id).all()
+        question_list = (
+            db_sess.query(Question)
+            .filter(
+                Question.topic_id == topic_id,
+            )
+            .order_by(desc(Question.id))
+            .all()
+        )
+        print(question_list)
 
         return render_template("questions.html", title="Вопросы по теме", questions=question_list, topic_id=topic_id)
     abort(403)
@@ -699,12 +756,12 @@ def students_by_group_id(group_id):
         db_sess = db_session.create_session()
         group = db_sess.query(Group).filter(Group.id == group_id).first()
         students_by_group = db_sess.query(User).filter(User.user_level == "student", User.group_id == group_id).all()
-        print(students_by_group)
 
         return render_template(
             "students_by_group.html",
             title=f"Студенты группы {group.name}",
             students=students_by_group,
+            group_name=group.name,
         )
 
     abort(403)
@@ -816,7 +873,6 @@ def top_students():
 
         students_top = sorted(students_res, key=lambda x: x[1], reverse=True)
 
-        print(students_top)
         return render_template(
             "top_students.html",
             title="Топ студентов",
