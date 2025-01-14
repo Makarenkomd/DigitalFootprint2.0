@@ -7,7 +7,7 @@
     <h1>Тест</h1>
     <form action="{{ url_for('submit_test', test_id=test.id) }}" method="post" id="form_test">
     {% for question, answer in que_ans %}
-        <div class="col-md-6 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
+        <div class="col-md-6 mx-auto border rounded custom-div" style="margin-bottom: 20px;" data-question-id="{{ question.id }}">
             {% if question == None %}
             <p class="text-left" style="margin: 10px 0;">Вопрос удален</p>
             {% else %}
@@ -15,15 +15,15 @@
             {% endif %}
             {% if current_user.user_level != 'admin' %}
                 {% if answer[0] == None %}
-                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ"></textarea>
+                    <textarea name="answer_{{ loop.index }}" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ"></textarea>
                 {% else %}
-                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ">{{ answer[0] }}</textarea>
+                    <textarea name="answer_{{ loop.index }}" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ваш ответ">{{ answer[0] }}</textarea>
                 {% endif %}
             {% else %}
                 {% if answer[0] == None %}
-                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly></textarea>
+                    <textarea name="answer_{{ loop.index }}" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly></textarea>
                 {% else %}
-                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly>{{ answer[0] }}</textarea>
+                    <textarea name="answer_{{ loop.index }}" class="form-control" rows="5" style="margin: 10px 0;" placeholder="Ответ" readonly>{{ answer[0] }}</textarea>
                 {% endif %}
             {% endif %}
         </div>
@@ -48,14 +48,13 @@
 
     // Функция для обновления таймера
     function updateTimer() {
-        console.log(1)
         const timerElement = document.getElementById('timer-value');
         timerElement.textContent = formatTime(distance);
 
         if (distance <= 0) {
             clearInterval(timerInterval);
             document.getElementById('form_test').submit();
-            window.location.href = "{{ url_for('index') }}";
+            window.location.href = "{{ url_for('select_group_for_view_tests') }}";
         } else {
             distance -= 1000; // Уменьшаем время на 1 секунду
         }
@@ -63,6 +62,36 @@
 
     // Запускаем таймер
     const timerInterval = setInterval(updateTimer, 1000);
+
+    // Функция для отправки ответа через AJAX
+    function sendAnswer(questionId, fieldName, answer) {
+        $.ajax({
+            url: "{{ url_for('submit_test', test_id=test.id) }}",
+            type: "POST",
+            data: {
+                question_id: questionId,
+                [fieldName]: answer, // Динамическое имя поля
+            },
+            success: function(response) {
+                console.log("Ответ успешно отправлен");
+            },
+            error: function(xhr, status, error) {
+                console.error("Ошибка при отправке ответа:", error);
+            }
+        });
+    }
+
+    // Отслеживаем изменения в textarea
+    $(document).ready(function() {
+        $('textarea').on('input', function() {
+            const questionId = $(this).closest('.custom-div').data('question-id');
+            const fieldName = $(this).attr('name'); // Получаем имя поля (например, answer_1)
+            const answer = $(this).val(); // Получаем значение поля
+
+            // Отправляем данные на сервер
+            sendAnswer(questionId, fieldName, answer);
+        });
+    });
 </script>
 
 {% endblock %}

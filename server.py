@@ -48,6 +48,7 @@ def load_user(user_id):
 def select_group_for_view_tests():
     if not current_user.is_authenticated:
         return redirect("/authentication")
+
     if current_user.user_level == "student":
         db_sess = db_session.create_session()
         available_tests = db_sess.query(BlitzTest).filter(BlitzTest.student == current_user.id)
@@ -300,13 +301,27 @@ def submit_test(test_id):
     if test.date + datetime.timedelta(minutes=5) < datetime.datetime.now():
         return abort(404)
 
-    answers = request.form.getlist("answer")
-
-    test.answer_1 = answers[0]
-    test.answer_2 = answers[1]
-    test.answer_3 = answers[2]
-    test.answer_4 = answers[3]
-    test.answer_5 = answers[4]
+    print("request.form:", request.form)
+    
+    if "answer_1" in request.form:
+        print(1)
+        test.answer_1 = request.form.get("answer_1")
+        
+    if "answer_2" in request.form:
+        print(2)
+        test.answer_2 = request.form.get("answer_2")
+        
+    if "answer_3" in request.form:
+        print(3)
+        test.answer_3 = request.form.get("answer_3")
+        
+    if "answer_4" in request.form:
+        print(4)
+        test.answer_4 = request.form.get("answer_4")
+        
+    if "answer_5" in request.form:
+        print(5)
+        test.answer_5 = request.form.get("answer_5")
 
     db_sess.commit()
 

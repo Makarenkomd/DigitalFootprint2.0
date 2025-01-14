@@ -8,12 +8,14 @@
     <input type="text" id="searchInput" class="form-control mb-3" placeholder="Поиск по названию теста">
 </div>
 {% for test, result in tests_and_results|reverse %}
-<div class="col-md-6 border rounded mx-auto custom-div" style="margin-bottom: 20px; padding: 10px;">
+<div class="col-md-6 border rounded mx-auto custom-div" style="margin-bottom: 20px; padding: 10px; background-color: {% if result == 'Не проверено' %} red; {% else %} green; {% endif %}">
     <p class="text-left" style="margin-bottom: 10px;">{{ test[0].date.strftime("%d.%m.%Y %H:%M") }} {{ test[1].name }}</p>
     <div>
+        {% if result == "Не проверено" %}
+        {% endif %}
         {% if (date_time - test[0].date).total_seconds() > 300 %}
             <p class="text-left" style="margin-bottom: 10px;">Результат: {{ result }}</p>
-            <p style="color: red;">Время вышло</p>
+            <p>Время вышло</p>
             <a href="{{ url_for('test_result', test_id=test[0].id) }}">
                 <button type="button" style="margin-bottom: 10px;" class="btn btn-secondary">Проверить тест</button>
             </a>
