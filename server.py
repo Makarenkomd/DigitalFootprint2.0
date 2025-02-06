@@ -621,7 +621,7 @@ def topics():
 
         query = (
             select(
-                Question.id,
+                Topic.id,
                 Topic.name,
                 func.count(Question.id).label("question_count"),
             )
@@ -639,6 +639,7 @@ def topics():
         )
 
         topics_with_count_of_questions = db_sess.execute(query).all()
+        
 
         db_sess.close()
 
