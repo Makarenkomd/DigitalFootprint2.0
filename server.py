@@ -692,7 +692,7 @@ def stats_of_groups():
     return send_file(
         output,
         mimetype="text/csv",
-        download_name=f"stats_group_{group_id}.csv",
+        download_name="stats_group.csv",
         as_attachment=True,
     )
 @app.route("/export_stats/stats_by_group/<int:group_id>", methods=["GET"])

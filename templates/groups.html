@@ -116,7 +116,7 @@
 }
 </style>
 <body>
-<h1>Выбор группы для просмотра<a type="button" class="btn btn-primary" style="float: right;" href="/top_students">Топ студентов</a><a type="button" class="btn btn-primary" style="float: right;" href="/groups/create">Создать группу</a></h1>
+<h1>Выбор группы для просмотра<a type="button" class="btn btn-primary" style="float: right;" href="/top_students">Топ студентов</a><a type="button" class="btn btn-primary" style="float: right; background-color: #4CAF50" href="/export_stats/stats_groups">Статистика всех групп</a><a type="button" class="btn btn-primary" style="float: right;" href="/groups/create">Создать группу</a></h1>
 
 <input type="text" id="searchInput" onkeyup="searchTests()" placeholder="Поиск студентов">
 <ul id="testList">
@@ -124,6 +124,7 @@
     <li class="testItem">{{ group.name }}
         <div class="buttons-container"><a type="button" class="btn btn-primary" href="/groups/{{ group.id }}">Посмотреть
             список студентов</a></div>
+        <div class="buttons-container"><a type="button" style="background-color: #4CAF50" class="btn btn-primary" href="/export_stats/stats_by_group/{{ group.id }}">Статистика студента</a></div>
             <div class="buttons-container"><a type="button" class="btn btn-primary" href="/groups/{{ group.id }}/edit">Изменить название</a></div>
         <div class="buttons-container"><a type="button" class="btn btn-danger" href="/groups/{{ group.id }}/delete">Удалить</a></div>
     </li>

@@ -121,6 +121,7 @@
 <ul id="testList">
     {% for student in students %}
     <li class="testItem">{{ student.name }}
+        <div class="buttons-container"><a type="button" class="btn btn-primary" style="background-color: #4CAF50" href="/export_stats/stats_by_student/{{ student.id }}">Статистика</a></div>
         <div class="buttons-container"><a type="button" class="btn btn-primary" href="/personal_cabinet/{{ student.id }}">Профиль</a></div>
         <div class="buttons-container"><a type="button" class="btn btn-danger" href="/users/{{ student.id }}/delete">Удалить</a></div>
     </li>
