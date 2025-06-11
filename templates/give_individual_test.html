@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+    }
+    .container {
+        width: 80%;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+    }
+    .profile {
+        flex: 1;
+    }
+    .profile img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: block;
+    }
+    .profile h2 {
+        text-align: center;
+        margin-top: 10px;
+        color: #555;
+    }
+    .info {
+        flex: 2;
+        padding-left: 20px;
+    }
+    .info p {
+        margin-bottom: 10px;
+        color: #666;
+    }
+    canvas {
+        width: 200px;
+        height: 200px;
+    }
+    .topics-container {
+        max-height: 300px; /* Максимальная высота контейнера с прокруткой */
+        overflow-y: auto; /* Включение вертикальной прокрутки */
+        position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+    }
+    .topics {
+        position: relative; /* Позиционирование для абсолютно позиционированных элементов внутри */
+    }
+    .topics table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .topics th, .topics td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    .topics th {
+        background-color: #f2f2f2;
+    }
+    .search-bar {
+        position: sticky; /* Фиксированное позиционирование */
+        top: 0; /* Отступ от верха */
+        background-color: #f8f9fa; /* Цвет фона */
+        padding: 10px; /* Отступ внутри элемента */
+        z-index: 1; /* Z-индекс для управления порядком слоев */
+    }
+</style>
+<form action="/groups/{{ group_id }}/give_test" method="post">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <fieldset class="border p-3 rounded">
+                <legend class="form-legend">Выберите студентов:</legend>
+                <div class="form-group">
+                    <input type="text" class="form-control mb-2" id="student-search" placeholder="Поиск по студентам">
+                    {% for student in students %}
+                    <div class="form-check student">
+                        <input type="checkbox" class="form-check-input" id="student-{{ student.id }}"
+                               name="students" value="{{ student.id }}">
+                        <label class="form-check-label" for="student-{{ student.id }}">{{ student.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <br>
+            <button type="submit" class="btn btn-primary float-end" onclick="return validateSelection()">Выдать
+                тест
+            </button>
+        </div>
+        <div class="col-md-6">
+            <fieldset class="border p-3 rounded">
+                <legend class="form-legend">Выберите тест:</legend>
+                <div class="form-group">
+                    <input type="text" class="form-control mb-2" id="topic-search" placeholder="Поиск по темам">
+                    <ul class="list-unstyled">
+                        {% for topic in topics %}
+                        <li class="topic">
+                            <div class="form-check form-check-inline">
+                                <input type="checkbox" class="form-check-input" id="topic-{{ topic.id }}" name="topics"
+                                       value="{{ topic.id }}">
+                                <label class="form-check-label" for="topic-{{ topic.id }}">{{ topic.name }}</label>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </fieldset>
+            <br>
+        </div>
+        <div>
+        <div id="error-message" class="alert alert-danger" role="alert" style="display: none;">
+            Пожалуйста, выберите хотя бы одного студента и один тест.
+        </div>
+        {% if message %}
+        <div class="alert alert-danger" role="alert">
+            {{ message }}
+        </div>
+        {% endif %}
+        </div>
+    </div>
+    </div>
+</form>
+</div>
+
+<script>
+    function validateSelection() {
+      // Check if any student checkbox is selected
+      var studentSelected = false;
+      var studentCheckboxes = document.querySelectorAll('input[type="checkbox"][name="students"]');
+      for (var i = 0; i < studentCheckboxes.length; i++) {
+        if (studentCheckboxes[i].checked) {
+          studentSelected = true;
+          break;
+        }
+      }
+
+      // Check if any topic checkbox is selected
+      var topicCheckboxes = document.querySelectorAll('input[type="checkbox"][name="topics"]:checked');
+
+      // Display error message if necessary
+      var errorMessage = document.getElementById('error-message');
+      if (!studentSelected || topicCheckboxes.length === 0) {
+        errorMessage.style.display = 'block';
+        return false; // Prevent form submission if selection is invalid
+      } else {
+        errorMessage.style.display = 'none';
+        return true; // Allow form submission if selection is valid
+      }
+    }
+
+    // Real-time search for students
+    document.getElementById('student-search').addEventListener('input', function() {
+        var searchValue = this.value.toLowerCase();
+        var students = document.querySelectorAll('.student');
+        students.forEach(function(student) {
+            var name = student.querySelector('label').innerText.toLowerCase();
+            if (name.indexOf(searchValue) === -1) {
+                student.style.display = 'none';
+            } else {
+                student.style.display = 'block';
+            }
+        });
+    });
+
+    // Real-time search for topics
+    document.getElementById('topic-search').addEventListener('input', function() {
+        var searchValue = this.value.toLowerCase();
+        var topics = document.querySelectorAll('.topic');
+        topics.forEach(function(topic) {
+            var name = topic.querySelector('label').innerText.toLowerCase();
+            if (name.indexOf(searchValue) === -1) {
+                topic.style.display = 'none';
+            } else {
+                topic.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+
+{% endblock %}

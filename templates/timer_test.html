@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="timer" class="text-center" style="font-size: 40px; margin-top: 20px;">Осталось времени: <span id="timer-value"></span></div>
+
+<script>
+    // Получаем значение distance из Flask
+    let distance = {{ distance }};
+
+    // Функция для форматирования времени
+    function formatTime(ms) {
+        if (ms <= 0) {
+            return "0:00"; // Возвращаем "0:00", если время меньше или равно нулю
+        }
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    // Функция для обновления таймера
+    function updateTimer() {
+        const timerElement = document.getElementById('timer-value');
+        timerElement.textContent = formatTime(distance);
+
+        if (distance <= 0) {
+            clearInterval(timerInterval); // Останавливаем таймер
+            document.getElementById('form_test').submit(); // Отправляем форму
+            window.location.href = "{{ url_for('select_group_for_view_tests') }}"; // Перенаправляем пользователя
+        } else {
+            distance -= 1000; // Уменьшаем время на 1 секунду
+        }
+    }
+
+    // Запускаем таймер
+    const timerInterval = setInterval(updateTimer, 1000);
+</script>
+
+{% endblock %}

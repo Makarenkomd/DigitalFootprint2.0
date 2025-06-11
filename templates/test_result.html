@@ -1,10 +1,24 @@
 {% extends "base.html" %}
-
 {% block content %}
+<style>
+    /* Пользовательские стили для ширины столбцов */
+    .col-first {
+        width: 35%;
+    }
+    .col-second {
+        width: 50%;
+    }
+    .col-third {
+        width: 15%;
+    }
+</style>
+<a href="/tests/{{ group_id }}">
+    <button type="button" class="btn btn-secondary" style="font-size: 25px;"><==</button>
+</a>
 <div class="container text-center">
     <h1>Тест</h1>
     <form action="{{ url_for('submit_test_result', test_id=test.id) }}" method="post">
-        {% for question, answer, comment, result in que_ans_comm_results %}
+        {% for question, answer, comment, result, most_similar_comments in que_ans_comm_results %}
         <div class="row">
             <div class="col-md-12 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
                 <div class="row">
@@ -15,8 +29,7 @@
                         <p class="text-left" style="margin: 10px 0;">{{ question.text }}</p>
                         {% endif %}
                         {% if answer[0] == None %}
-                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;"
-                                  readonly></textarea>
+                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly></textarea>
                         {% else %}
                         <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly>{{ answer[0] }}</textarea>
                         {% endif %}
@@ -54,14 +67,55 @@
                                   placeholder="Комментарий">{{ comment[0] }}</textarea>
                         {% endif %}
                     </div>
+                    <div class="container mt-5">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <td>Комментарий</td>
+                                    <td>Ответ</td>
+                                    <td>Схожесть</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for similar_comment in most_similar_comments %}
+                                <tr>
+                                    <td class="col-first">«{{ similar_comment[1] }}»</td>
+                                    <td class="col-second">«{{ similar_comment[0] }}»</td>
+                                    <td class="col-third">{{ similar_comment[2] }}</td>
+                                    <td class="col-third">
+                                        <button type="button" class="btn btn-sm btn-primary copy-comment"
+                                                data-comment="{{ similar_comment[1] }}">Выбрать</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
         {% endfor %}
         <div>
             <input type="submit" class="btn btn-primary" value="Отправить">
-            <input type="submit" class="btn btn-primary" value="Отправить">
+            <a href="/tests/{{ group_id }}">
+                <button type="button" class="btn btn-secondary">Отмена</button>
+            </a>
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const copyButtons = document.querySelectorAll('.copy-comment');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const commentText = this.getAttribute('data-comment');
+                const textarea = this.closest('div.custom-div').querySelector('textarea[name="comment"]');
+                if (textarea) {
+                    textarea.value = commentText;
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

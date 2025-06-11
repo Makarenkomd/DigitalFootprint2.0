@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Пользовательские стили для ширины столбцов */
+    .col-first {
+        width: 35%;
+    }
+    .col-second {
+        width: 65%;
+    }
+</style>
+<div class="container text-center">
+    <h1>Тест</h1>
+    <form action="{{ url_for('submit_test_result', test_id=test.id) }}" method="post">
+        {% for question, answer, comment, result, most_similar_comments in que_ans_comm_results %}
+        <div class="row">
+            <div class="col-md-12 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if question == None %}
+                        <p class="text-left" style="margin: 10px 0;">Вопрос удален</p>
+                        {% else %}
+                        <p class="text-left" style="margin: 10px 0;">{{ question.text }}</p>
+                        {% endif %}
+                        {% if answer[0] == None %}
+                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;"
+                                  readonly></textarea>
+                        {% else %}
+                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly>{{ answer[0] }}</textarea>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-check-inline">
+                            {% if result[0] == 1 %}
+                            <input class="form-check-input" type="radio" name="correct{{ loop.index }}"
+                                   id="correct{{ loop.index }}_true" value="true" checked="checked">
+                            {% else %}
+                            <input class="form-check-input" type="radio" name="correct{{ loop.index }}"
+                                   id="correct{{ loop.index }}_true" value="true">
+                            {% endif %}
+                            <label class="form-check-label" for="correct{{ loop.index }}_true">
+                                Верно
+                            </label>
+                        </div>
+                        <div class="form-group form-check-inline">
+                            {% if result[0] == 0 %}
+                            <input class="form-check-input" type="radio" name="correct{{ loop.index }}"
+                                   id="correct{{ loop.index }}_false" value="false" checked="checked">
+                            {% else %}
+                            <input class="form-check-input" type="radio" name="correct{{ loop.index }}"
+                                   id="correct{{ loop.index }}_false" value="false">
+                            {% endif %}
+                            <label class="form-check-label" for="correct{{ loop.index }}_false">
+                                Неверно
+                            </label>
+                        </div>
+                        {% if comment[0] == None %}
+                        <textarea name="comment" class="form-control" rows="5" style="margin-bottom: 10px 0; "
+                                  placeholder="Комментарий"></textarea>
+                        {% else %}
+                        <textarea name="comment" class="form-control" rows="5" style="margin-bottom: 10px 0;"
+                                  placeholder="Комментарий">{{ comment[0] }}</textarea>
+                        {% endif %}
+                    </div>
+                    <div class="container mt-5">
+                        <table class="table table-bordered">
+                            <tbody>
+                                {% for similar_comment in most_similar_comments %}
+                                <tr>
+                                    <td class="col-first">ffff</td>
+                                    <td class="col-second">Данные второго столбца</td>
+                                </tr>
+                                <tr>
+                                    <td class="col-first">Еще данные первого столбца</td>
+                                    <td class="col-second">Еще данные второго столбца</td>
+                                </tr>
+                                <tr>
+                                    <td class="col-first">Еще данные первого столбца</td>
+                                    <td class="col-second">Еще данные второго столбца</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div>
+            <input type="submit" class="btn btn-primary" value="Отправить">
+            <input type="submit" class="btn btn-primary" value="Отправить">
+        </div>
+    </form>
+</div>
+{% endblock %}

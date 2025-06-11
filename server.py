@@ -1,8 +1,10 @@
 import datetime
-import os
 import random
 from sqlalchemy import desc, func, select
+import csv
+import io
 
+from flask import send_file
 from flask import (
     Flask,
     abort,
@@ -30,6 +32,9 @@ from forms.group import GroupForm
 from forms.user import LoginForm, RegisterForm, ProfileForm
 from utils.count_correct_and_wrong_ans import count_cor_wng_ans
 from utils.count_res_topic import count_res_topics, count_res_topics_sum
+from utils.meaningful_comparison import find_most_similar_comment_by_answer
+from utils.individual_test import get_individual_test
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "yandexlyceum_secret_key"
@@ -214,9 +219,35 @@ def test_result(test_id):
             db_sess.query(BlitzTest.result_answer_5).filter(BlitzTest.id == test_id)[0],
         ]
 
-        que_ans_comm_results = zip(questions, answers, comments, results)
+        most_similar_comments = [
+            find_most_similar_comment_by_answer(answers[0], questions[0].id),
+            find_most_similar_comment_by_answer(answers[1], questions[1].id),
+            find_most_similar_comment_by_answer(answers[2], questions[2].id),
+            find_most_similar_comment_by_answer(answers[3], questions[3].id),
+            find_most_similar_comment_by_answer(answers[3], questions[4].id),
+        ]
+        student_id_by_test = test.student
 
-        return render_template("test_result.html", test=test, que_ans_comm_results=que_ans_comm_results, title="Тест")
+        user_student = db_sess.query(User).filter(User.id == student_id_by_test).first()
+
+        group_id_of_student = user_student.group_id
+
+        que_ans_comm_results = zip(
+            questions,
+            answers,
+            comments,
+            results,
+            most_similar_comments,
+        )
+        print(most_similar_comments)
+
+        return render_template(
+            "test_result.html",
+            test=test,
+            que_ans_comm_results=que_ans_comm_results,
+            group_id=group_id_of_student,
+            title="Тест",
+        )
     abort(403)
 
 
@@ -301,26 +332,19 @@ def submit_test(test_id):
     if test.date + datetime.timedelta(minutes=5) < datetime.datetime.now():
         return abort(404)
 
-    print("request.form:", request.form)
-    
     if "answer_1" in request.form:
-        print(1)
         test.answer_1 = request.form.get("answer_1")
-        
+
     if "answer_2" in request.form:
-        print(2)
         test.answer_2 = request.form.get("answer_2")
-        
+
     if "answer_3" in request.form:
-        print(3)
         test.answer_3 = request.form.get("answer_3")
-        
+
     if "answer_4" in request.form:
-        print(4)
         test.answer_4 = request.form.get("answer_4")
-        
+
     if "answer_5" in request.form:
-        print(5)
         test.answer_5 = request.form.get("answer_5")
 
     db_sess.commit()
@@ -469,8 +493,10 @@ def give_test(group_id):
 
                     db_sess.add(blitz_test)
                     db_sess.commit()
+                    test_id = blitz_test.id
 
                     db_sess.close()
+                    return redirect(f"/timer_of_test/{test_id}")
                 else:
 
                     return render_template(
@@ -486,6 +512,65 @@ def give_test(group_id):
 
     return render_template(
         "give_test.html",
+        students=students,
+        topics=topics,
+        title="Выдача тестов",
+        group_id=group_id,
+    )
+
+
+@app.route("/groups/<int:group_id>/give_individual_test", methods=["GET", "POST"])
+@login_required
+def give_individual_test(group_id):
+    if current_user.user_level == "admin":
+        db_sess = db_session.create_session()
+        students = db_sess.query(User).filter(User.user_level != "admin" and User.group_id == group_id)
+        topics = db_sess.query(Topic)
+
+        if request.method == "POST":
+
+            students_id = request.form.getlist("students")
+            topics_id = request.form.getlist("topics")
+            topics_id = list(map(int, topics_id))
+
+            for j in range(len(students_id)):
+                blitz_test = BlitzTest()
+                count = db_sess.query(Question).filter(Question.topic_id.in_(topics_id)).count()
+                if count <= 5:
+                    questions = [
+                        db_sess.query(Question).filter(Question.topic_id.in_(topics_id))[i].id for i in range(count)
+                    ]
+
+                    questions_index = [i for i in range(count)]
+
+                    blitz_test.question_1 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_2 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_3 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_4 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.question_5 = questions[questions_index.pop(random.randrange(len(questions_index)))]
+                    blitz_test.student = students_id[j]
+
+                    db_sess.add(blitz_test)
+                    db_sess.commit()
+                    test_id = blitz_test.id
+
+                    db_sess.close()
+                    return redirect(f"/timer_of_test/{test_id}")
+                else:
+
+                    return render_template(
+                        "give_individual_test.html",
+                        students=students,
+                        topics=topics,
+                        title="Выдача тестов",
+                        message="Вопросов на выбранную тему больше 5",
+                    )
+
+    else:
+        abort(403)
+
+    return render_template(
+        "give_individual_test.html",
         students=students,
         topics=topics,
         title="Выдача тестов",
@@ -526,6 +611,54 @@ def edit_group(group_id):
     abort(403)
 
 
+def stats_topics_by_student_id(student_id):
+    sess = db_session.create_session()
+    tests = sess.query(BlitzTest).filter(BlitzTest.student == student_id).all()
+    topics = {}
+    for test in tests:
+        for index_of_task in range(1, 6):
+            topic_of_question = (
+                sess.query(Question).filter(Question.id == getattr(test, f"question_{index_of_task}")).first().topic_id
+            )
+            if topic_of_question not in topics:
+                topics[topic_of_question] = {
+                    "wrong": 0,
+                    "right": 0,
+                }
+            if getattr(test, f"result_answer_{index_of_task}") == 0:
+                topics[topic_of_question]["wrong"] += 1
+            elif getattr(test, f"result_answer_{index_of_task}") == 1:
+                topics[topic_of_question]["right"] += 1
+    sess.close()
+    return topics
+
+
+@app.route("/export_stats/<int:student_id>", methods=["GET"])
+def export_to_csv_file_stats(student_id):
+    sess = db_session.create_session()
+    # Экспорт topics в csv и передать пользователю как скачивание сразу напрямую файл передать в return send_file
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["topic_id", "correct", "incorrect"])
+
+    for topic_id, stats in topics.items():
+        topic = sess.query(Topic).filter(Topic.id == topic_id).first()
+        cw.writerow([topic.name, stats["right"], stats["wrong"]])
+    sess.close()
+
+    # Преобразуем в байты для отправки
+    output = io.BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="text/csv",
+        download_name=f"stats_student_{student_id}.csv",
+        as_attachment=True,
+    )
+
+
 @app.route("/users/<int:user_id>/delete", methods=["GET"])
 def delete_user(user_id):
     if current_user.user_level == "admin":
@@ -546,6 +679,28 @@ def delete_user(user_id):
         return redirect(f"/groups/{group_id}")
 
     return abort(403)
+
+
+@app.route("/timer_of_test/<int:test_id>", methods=["GET"])
+def timer_test(test_id):
+    sess = db_session.create_session()
+
+    test = (
+        sess.query(
+            BlitzTest,
+        )
+        .filter(
+            BlitzTest.id == test_id,
+        )
+        .first()
+    )
+
+    distance = ((test.date + datetime.timedelta(minutes=5)) - datetime.datetime.now()).total_seconds() * 1000
+
+    return render_template(
+        "timer_test.html",
+        distance=distance,
+    )
 
 
 @login_required
@@ -583,12 +738,9 @@ def personal_cabinet(user_id):
             ):
                 usr.name = form_for_profile.name.data
                 usr.date_of_birth = form_for_profile.date_of_birth.data
-                print(form_for_profile.group.data)
-                print(type(form_for_profile.group.data))
                 usr.group_id = form_for_profile.group.data
 
                 db_sess.commit()
-                print(usr.group_id)
 
             elif count_of_users_with_this_name != 0:
                 message = "Пользователь с таким именем уже существует"
@@ -639,7 +791,6 @@ def topics():
         )
 
         topics_with_count_of_questions = db_sess.execute(query).all()
-        
 
         db_sess.close()
 
@@ -901,7 +1052,8 @@ def top_students():
 def main():
     db_session.global_init("db/database.db")
     app.register_blueprint(api.blueprint)
-    app.run(port=8080, host="0.0.0.0", debug=False)
+    print(find_most_similar_comment_by_answer("f", 2))
+    app.run(port=8080, host="0.0.0.0", debug=True)
 
 
 if __name__ == "__main__":
