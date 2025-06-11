@@ -611,7 +611,7 @@ def edit_group(group_id):
     abort(403)
 
 
-def stats_topics_by_student_id(student_id):
+def get_stats_topics_by_student_id(student_id):
     sess = db_session.create_session()
     tests = sess.query(BlitzTest).filter(BlitzTest.student == student_id).all()
     topics = {}
@@ -633,9 +633,99 @@ def stats_topics_by_student_id(student_id):
     return topics
 
 
-@app.route("/export_stats/<int:student_id>", methods=["GET"])
-def export_to_csv_file_stats(student_id):
+def get_stats_students_by_group_id(group_id):
     sess = db_session.create_session()
+    students = sess.query(User).filter(User.group_id == group_id).all()
+    stats_students = {}
+    for student in students:
+        stats_by_student = get_stats_topics_by_student_id(student.id)
+        wrong_count = 0
+        right_count = 0
+        for topic_id, stats in stats_by_student.items():
+            wrong_count += stats["wrong"]
+            right_count += stats["right"]
+        stats_students[student.id] = {
+            "wrong": wrong_count,
+            "right": right_count,
+        }
+    sess.close()
+    return stats_students
+
+
+def get_stats_groups():
+    sess = db_session.create_session()
+    groups = sess.query(Group).all()
+    stats_groups = {}
+    for group in groups:
+        stats_by_group = get_stats_students_by_group_id(group.id)
+        wrong_count = 0
+        right_count = 0
+        for topic_id, stats in stats_by_group.items():
+            wrong_count += stats["wrong"]
+            right_count += stats["right"]
+        stats_groups[group.id] = {
+            "wrong": wrong_count,
+            "right": right_count,
+        }
+    sess.close()
+    return stats_groups
+
+
+@app.route("/export_stats/stats_groups", methods=["GET"])
+def stats_of_groups():
+    sess = db_session.create_session()
+    stats_groups = get_stats_groups()
+    # Экспорт topics в csv и передать пользователю как скачивание сразу напрямую файл передать в return send_file
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["group_id", "correct", "incorrect"])
+    for group_id, stats in stats_groups.items():
+        group = sess.query(Group).filter(Group.id == group_id).first()
+        cw.writerow([group.name, stats["right"], stats["wrong"]])
+    sess.close()
+
+    # Преобразуем в байты для отправки
+    output = io.BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="text/csv",
+        download_name=f"stats_group_{group_id}.csv",
+        as_attachment=True,
+    )
+@app.route("/export_stats/stats_by_group/<int:group_id>", methods=["GET"])
+def stats_of_students_by_group(group_id):
+    sess = db_session.create_session()
+    stats_students_by_group = get_stats_students_by_group_id(group_id)
+    # Экспорт topics в csv и передать пользователю как скачивание сразу напрямую файл передать в return send_file
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["student_id", "correct", "incorrect"])
+    print(stats_students_by_group)
+    for student_id, stats in stats_students_by_group.items():
+        student = sess.query(User).filter(User.id == student_id).first()
+        cw.writerow([student.name, stats["right"], stats["wrong"]])
+    sess.close()
+
+    # Преобразуем в байты для отправки
+    output = io.BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="text/csv",
+        download_name=f"stats_group_{group_id}.csv",
+        as_attachment=True,
+    )
+
+
+@app.route("/export_stats/stats_by_student/<int:student_id>", methods=["GET"])
+def stats_by_student(student_id):
+    sess = db_session.create_session()
+    topics = get_stats_topics_by_student_id(student_id)
     # Экспорт topics в csv и передать пользователю как скачивание сразу напрямую файл передать в return send_file
     si = io.StringIO()
     cw = csv.writer(si)
@@ -766,7 +856,7 @@ def personal_cabinet(user_id):
 
 @app.route("/topics")
 @login_required
-def topics():
+def show_all_topics():
     if current_user.user_level == "admin":
 
         db_sess = db_session.create_session()
