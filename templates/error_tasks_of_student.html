@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* Пользовательские стили для ширины столбцов */
+    .col-first {
+        width: 35%;
+    }
+    .col-second {
+        width: 50%;
+    }
+    .col-third {
+        width: 15%;
+    }
+</style>
+<a href="/tests/{{ group_id }}">
+    <button type="button" class="btn btn-secondary" style="font-size: 25px;"><==</button>
+</a>
+<div class="container text-center">
+    <h1>Тест</h1>
+    {% for error_task in error_tasks %}
+    <div class="row">
+        <div class="col-md-12 mx-auto border rounded custom-div" style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-left" style="margin: 10px 0;">{{ error_task['text_task'] }}</p>
+                    <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly>{{ error_task['answer'] }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <p class="text-left" style="margin: 10px 0;">{{ error_task['start_datetime'] }}</p>
+                    <textarea name="comment" class="form-control" rows="5" style="margin-bottom: 10px 0;"
+                                placeholder="Комментарий">{{ error_task['comment'] }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

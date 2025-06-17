@@ -57,6 +57,10 @@
             window.location.href = "{{ url_for('select_group_for_view_tests') }}";
         } else {
             distance -= 1000; // Уменьшаем время на 1 секунду
+            if (distance <= 60 * 1000) {
+                body = document.querySelector('body');
+                body.style.backgroundColor = '#f8d7da';
+            }
         }
     }
 

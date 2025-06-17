@@ -184,71 +184,108 @@ def start_test(test_id):
 @app.route("/test_result/<int:test_id>")
 @login_required
 def test_result(test_id):
-    if current_user.user_level == "admin":
-        db_sess = db_session.create_session()
-        test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
-        questions = [
-            db_sess.query(Question).filter(Question.id == test.question_1).first(),
-            db_sess.query(Question).filter(Question.id == test.question_2).first(),
-            db_sess.query(Question).filter(Question.id == test.question_3).first(),
-            db_sess.query(Question).filter(Question.id == test.question_4).first(),
-            db_sess.query(Question).filter(Question.id == test.question_5).first(),
-        ]
+    if current_user.user_level != "admin":
+        return abort(404)
 
-        answers = [
-            db_sess.query(BlitzTest.answer_1).filter(BlitzTest.id == test_id).first(),
-            db_sess.query(BlitzTest.answer_2).filter(BlitzTest.id == test_id).first(),
-            db_sess.query(BlitzTest.answer_3).filter(BlitzTest.id == test_id).first(),
-            db_sess.query(BlitzTest.answer_4).filter(BlitzTest.id == test_id).first(),
-            db_sess.query(BlitzTest.answer_5).filter(BlitzTest.id == test_id).first(),
-        ]
+    db_sess = db_session.create_session()
+    test = db_sess.query(BlitzTest).filter(BlitzTest.id == test_id).first()
+    questions = [
+        db_sess.query(Question).filter(Question.id == test.question_1).first(),
+        db_sess.query(Question).filter(Question.id == test.question_2).first(),
+        db_sess.query(Question).filter(Question.id == test.question_3).first(),
+        db_sess.query(Question).filter(Question.id == test.question_4).first(),
+        db_sess.query(Question).filter(Question.id == test.question_5).first(),
+    ]
 
-        comments = [
-            db_sess.query(BlitzTest.comment_1).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.comment_2).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.comment_3).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.comment_4).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.comment_5).filter(BlitzTest.id == test_id)[0],
-        ]
+    answers = [
+        db_sess.query(BlitzTest.answer_1).filter(BlitzTest.id == test_id).first(),
+        db_sess.query(BlitzTest.answer_2).filter(BlitzTest.id == test_id).first(),
+        db_sess.query(BlitzTest.answer_3).filter(BlitzTest.id == test_id).first(),
+        db_sess.query(BlitzTest.answer_4).filter(BlitzTest.id == test_id).first(),
+        db_sess.query(BlitzTest.answer_5).filter(BlitzTest.id == test_id).first(),
+    ]
 
-        results = [
-            db_sess.query(BlitzTest.result_answer_1).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.result_answer_2).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.result_answer_3).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.result_answer_4).filter(BlitzTest.id == test_id)[0],
-            db_sess.query(BlitzTest.result_answer_5).filter(BlitzTest.id == test_id)[0],
-        ]
+    comments = [
+        db_sess.query(BlitzTest.comment_1).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.comment_2).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.comment_3).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.comment_4).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.comment_5).filter(BlitzTest.id == test_id)[0],
+    ]
 
-        most_similar_comments = [
-            find_most_similar_comment_by_answer(answers[0], questions[0].id),
-            find_most_similar_comment_by_answer(answers[1], questions[1].id),
-            find_most_similar_comment_by_answer(answers[2], questions[2].id),
-            find_most_similar_comment_by_answer(answers[3], questions[3].id),
-            find_most_similar_comment_by_answer(answers[3], questions[4].id),
-        ]
-        student_id_by_test = test.student
+    results = [
+        db_sess.query(BlitzTest.result_answer_1).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.result_answer_2).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.result_answer_3).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.result_answer_4).filter(BlitzTest.id == test_id)[0],
+        db_sess.query(BlitzTest.result_answer_5).filter(BlitzTest.id == test_id)[0],
+    ]
 
-        user_student = db_sess.query(User).filter(User.id == student_id_by_test).first()
+    most_similar_comments = [
+        find_most_similar_comment_by_answer(answers[0], questions[0].id),
+        find_most_similar_comment_by_answer(answers[1], questions[1].id),
+        find_most_similar_comment_by_answer(answers[2], questions[2].id),
+        find_most_similar_comment_by_answer(answers[3], questions[3].id),
+        find_most_similar_comment_by_answer(answers[3], questions[4].id),
+    ]
+    student_id_by_test = test.student
 
-        group_id_of_student = user_student.group_id
+    user_student = db_sess.query(User).filter(User.id == student_id_by_test).first()
 
-        que_ans_comm_results = zip(
-            questions,
-            answers,
-            comments,
-            results,
-            most_similar_comments,
-        )
-        print(most_similar_comments)
+    group_id_of_student = user_student.group_id
 
-        return render_template(
-            "test_result.html",
-            test=test,
-            que_ans_comm_results=que_ans_comm_results,
-            group_id=group_id_of_student,
-            title="Тест",
-        )
-    abort(403)
+    que_ans_comm_results = zip(
+        questions,
+        answers,
+        comments,
+        results,
+        most_similar_comments,
+    )
+    print(most_similar_comments)
+
+    return render_template(
+        "test_result.html",
+        test=test,
+        que_ans_comm_results=que_ans_comm_results,
+        group_id=group_id_of_student,
+        title="Тест",
+    )
+
+
+@app.route("/get_all_error_tasks/<int:student_id>")
+@login_required
+def get_all_error_tasks(student_id):
+    db_sess = db_session.create_session()
+    tests = db_sess.query(BlitzTest).filter(BlitzTest.student == student_id).all()
+    # Внутри error_tasks будут храниться неправильно отвеченные задания
+    # каждое задание это словарь из
+    # условия задания text_task, ответ студента answer,
+    # комментарий преподавателя comment, дата и время когда были
+    error_tasks = []
+    for test in tests:
+        start_datetime = test.date
+        for index_of_task in range(1, 6):
+            if getattr(test, f"result_answer_{index_of_task}") == 0:
+                error_tasks.append(
+                    {
+                        "text_task": db_sess.query(Question)
+                        .filter(
+                            Question.id
+                            == getattr(
+                                test,
+                                f"question_{index_of_task}",
+                            ),
+                        )
+                        .first()
+                        .text,
+                        "answer": getattr(test, f"answer_{index_of_task}"),
+                        "comment": getattr(test, f"comment_{index_of_task}"),
+                        "start_datetime": start_datetime.strftime('%d %B %Y, %H:%M'),
+                    },
+                )
+    for i in error_tasks:
+        print(i)
+    return render_template("error_tasks_of_student.html", error_tasks=error_tasks)
 
 
 @app.route("/test_result_view/<int:test_id>")
@@ -695,6 +732,8 @@ def stats_of_groups():
         download_name="stats_group.csv",
         as_attachment=True,
     )
+
+
 @app.route("/export_stats/stats_by_group/<int:group_id>", methods=["GET"])
 def stats_of_students_by_group(group_id):
     sess = db_session.create_session()
