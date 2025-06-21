@@ -19,8 +19,8 @@ from flask_login import (
     login_user,
     logout_user,
 )
+from flask import jsonify
 
-from api import api
 from data import db_session
 from data.blitz_tests import BlitzTest
 from data.questions import Question
@@ -34,12 +34,22 @@ from utils.count_correct_and_wrong_ans import count_cor_wng_ans
 from utils.count_res_topic import count_res_topics, count_res_topics_sum
 from utils.meaningful_comparison import find_most_similar_comment_by_answer
 from utils.individual_test import get_individual_test
-
+from utils.yandex_gpt import check_task_test
+from yandex_cloud_ml_sdk import YCloudML
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "yandexlyceum_secret_key"
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+sdk = YCloudML(
+    folder_id="b1grdhhg4pon2srvak2b",
+    auth=r"t1.9euelZqKmcaPj4memcqWlIyKzI6UnO3rnpWamYmJy5PIzMuSkJaYnIzGy5bl8_dVKio9-e8ib1Rg_t3z9xVZJz357yJvVGD-zef1656VmpuKmYqbmJeYzY_Ii4uakcaV7_zF656VmpuKmYqbmJeYzY_Ii4uakcaV.6QmvLFXUjKxPPZvEfaH6lYx_8jHxlM2saZf5nJvk9rwOr9fKDMY9yWYXLAiMwubwIhFzbhPADHmBPDZEXiTHDw",
+)
+
+yand_model = sdk.models.completions("yandexgpt-lite", model_version="rc")
+yand_model = yand_model.configure(temperature=0.3)
 
 
 @login_manager.user_loader
@@ -252,6 +262,37 @@ def test_result(test_id):
     )
 
 
+# POST-эндпоинт — принимает JSON
+@app.route("/check_with_yandex_gpt", methods=["POST"])
+def check_with_yandex_gpt():
+    if not request.is_json:
+        return jsonify({"error": "Неверный формат данных"}), 400
+
+    received_json = request.get_json()
+    answer_from_gpt = check_task_test(
+        text_task=received_json["test_task"],
+        student_answer=received_json["answer_student"],
+        yand_model=yand_model,
+    ).text
+    is_correct = 0
+    if "Верно" in answer_from_gpt[:10]:
+        is_correct = 1
+
+    print("Получен JSON:", received_json)
+    print("\n" * 4)
+    print("-" * 30 + "YANDEX GPT" + "-" * 30)
+    print(answer_from_gpt)
+    print("-" * 30 + "----------" + "-" * 30)
+    print("\n" * 4)
+
+    return jsonify(
+        {
+            "is_correct": is_correct,
+            "comment_gpt": answer_from_gpt  ,
+        },
+    )
+
+
 @app.route("/get_all_error_tasks/<int:student_id>")
 @login_required
 def get_all_error_tasks(student_id):
@@ -280,7 +321,7 @@ def get_all_error_tasks(student_id):
                         .text,
                         "answer": getattr(test, f"answer_{index_of_task}"),
                         "comment": getattr(test, f"comment_{index_of_task}"),
-                        "start_datetime": start_datetime.strftime('%d %B %Y, %H:%M'),
+                        "start_datetime": start_datetime.strftime("%d %B %Y, %H:%M"),
                     },
                 )
     for i in error_tasks:
@@ -1180,7 +1221,6 @@ def top_students():
 
 def main():
     db_session.global_init("db/database.db")
-    app.register_blueprint(api.blueprint)
     print(find_most_similar_comment_by_answer("f", 2))
     app.run(port=8080, host="0.0.0.0", debug=True)
 

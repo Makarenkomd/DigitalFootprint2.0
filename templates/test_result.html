@@ -26,12 +26,12 @@
                         {% if question == None %}
                         <p class="text-left" style="margin: 10px 0;">Вопрос удален</p>
                         {% else %}
-                        <p class="text-left" style="margin: 10px 0;">{{ question.text }}</p>
+                        <p class="text-left question-text-{{ loop.index }}" style="margin: 10px 0;">{{ question.text }}</p>
                         {% endif %}
                         {% if answer[0] == None %}
-                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly></textarea>
+                        <textarea name="answer" class="form-control answer-student-{{ loop.index }}" rows="5" style="margin: 10px 0;" readonly></textarea>
                         {% else %}
-                        <textarea name="answer" class="form-control" rows="5" style="margin: 10px 0;" readonly>{{ answer[0] }}</textarea>
+                        <textarea name="answer" class="form-control answer-student-{{ loop.index }}" rows="5" style="margin: 10px 0;" readonly>{{ answer[0] }}</textarea>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
@@ -68,6 +68,12 @@
                         {% endif %}
                     </div>
                     <div class="container mt-5">
+                        
+                        <button type="button" class="btn btn-primary w-100 yandex_gpt_button" index_of_task="{{ loop.index }}">
+                            Проверить с помощью YandexGPT
+                        </button>
+                        <textarea class="form-control comment_by_gpt_{{ loop.index }}" rows="5" style="margin-bottom: 10px 0;"
+                                  placeholder="Комментарий с YandexGPT" readonly></textarea>
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
@@ -96,7 +102,7 @@
         </div>
         {% endfor %}
         <div>
-            <input type="submit" class="btn btn-primary" value="Отправить">
+            <input type="submit" style="background-color: red" class="btn btn-primary" value="Отправить">
             <a href="/tests/{{ group_id }}">
                 <button type="button" class="btn btn-secondary">Отмена</button>
             </a>
@@ -114,6 +120,48 @@
                 if (textarea) {
                     textarea.value = commentText;
                 }
+            });
+        });
+
+        const gptButtons = document.querySelectorAll(".yandex_gpt_button",)
+        gptButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                console.log(1)
+                const index_of_task = this.getAttribute('index_of_task');
+                const text_task = document.querySelector(`.question-text-${index_of_task}`).textContent;
+                const answer_student = document.querySelector(`.answer-student-${index_of_task}`).textContent;
+                console.log(text_task);
+                console.log(answer_student);
+                console.log("-------------");
+                const jsonToSend = {
+                    "test_task": text_task,
+                    "answer_student": answer_student,
+                };
+                fetch('{{ url_for("check_with_yandex_gpt")  }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonToSend)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(JSON.stringify(data, null, 2));
+                    const got_json = JSON.stringify(data, null, 2);
+                    console.log(got_json)
+                    console.log(data.comment)
+                    document.querySelector(`.comment_by_gpt_${index_of_task}`).value = data.comment_gpt;
+                    if (data.is_correct == 1) {
+                        document.querySelector(`#correct${index_of_task}_true`).checked = true;
+                    }
+                    else {
+                        document.querySelector(`#correct${index_of_task}_false`).checked = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка отправки:', error);
+                    alert('Ошибка при отправке JSON');
+                });
             });
         });
     });

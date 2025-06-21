@@ -2,12 +2,12 @@ import datetime
 
 import sqlalchemy
 from flask_login import UserMixin
-from sqlalchemy_serializer import SerializerMixin
+
 
 from .db_session import SqlAlchemyBase
 
 
-class BlitzTest(SqlAlchemyBase, UserMixin, SerializerMixin):
+class BlitzTest(SqlAlchemyBase, UserMixin):
     __tablename__ = "blitz_tests"
 
     id = sqlalchemy.Column(
