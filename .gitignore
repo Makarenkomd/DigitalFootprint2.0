@@ -3,3 +3,4 @@ venv
 __pycache__
 .ruff_cache
 backups_of_database
+/db/database.db
