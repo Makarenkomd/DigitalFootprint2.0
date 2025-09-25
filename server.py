@@ -574,7 +574,6 @@ def give_test(group_id):
                     test_id = blitz_test.id
 
                     db_sess.close()
-                    return redirect(f"/timer_of_test/{test_id}")
                 else:
 
                     return render_template(
@@ -585,6 +584,7 @@ def give_test(group_id):
                         message="Вопросов на выбранную тему меньше 5",
                     )
 
+            return redirect(f"/timer_of_test/{test_id}")
     else:
         abort(403)
 
